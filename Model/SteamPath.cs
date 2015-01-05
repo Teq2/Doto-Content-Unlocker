@@ -82,6 +82,7 @@ namespace Doto_Unlocker
                 var nodes = VDF.VdfParser.Parse(data);
                 var folders = nodes["Software"]["Valve"]["Steam"]["BaseInstallFolder"];
 
+                if (folders != null)
                 foreach (var folder_node in folders.ChildNodes)
                 {
                     yield return folder_node.Val.Replace("\\\\", "/") + "/SteamApps";

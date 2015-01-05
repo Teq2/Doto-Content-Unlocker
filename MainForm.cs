@@ -252,6 +252,7 @@ namespace Doto_Unlocker
         {
             try
             {
+                // alternate way: steam://run/<appid>//?param1=value1;param2=value2;param3=value3
                 if (Process.Start(Settings.Instance.SteamPath + "/steam.exe", "-applaunch 570 -vpk_override") != null) Close();
             }
             catch (Win32Exception ex)
