@@ -75,12 +75,11 @@ namespace Doto_Unlocker
             yield return steamPath + "/SteamApps";
 
             // additional libraries
-            string configFile = steamPath + "/config/config.vdf";
+            string configFile = steamPath + "/SteamApps/libraryfolders.vdf";
             if (File.Exists(configFile))
             {
                 var data = File.ReadAllText(configFile, Encoding.UTF8);
-                var nodes = VDF.VdfParser.Parse(data);
-                var folders = nodes["Software"]["Valve"]["Steam"]["BaseInstallFolder"];
+                var folders = VDF.VdfParser.Parse(data);
 
                 if (folders != null)
                 foreach (var folder_node in folders.ChildNodes)
