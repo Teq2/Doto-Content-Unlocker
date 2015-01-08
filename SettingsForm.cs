@@ -86,7 +86,7 @@ namespace Doto_Unlocker
                 var newSteamPath = folderBrowserDialog.SelectedPath;
                 if (SteamPaths.CheckSteamPath(newSteamPath))
                 {
-                    DetectDota2Path();
+                    if (DetectDota2Path(newSteamPath)) txtPath.Text = newSteamPath;
                 }
                 else
                     MetroMessageBox.Show(this, "\r\nSteam client not found\r\nPlease select another directory.", 
@@ -99,9 +99,10 @@ namespace Doto_Unlocker
             Browse();
         }
 
-        bool DetectDota2Path()
+        bool DetectDota2Path(string newSteamPath = null)
         {
-            var newDotaPath = SteamPaths.GetDota2Path(txtPath.Text.TrimEnd(new char[] { '/', '\\' }));
+            if (newSteamPath == null) newSteamPath = txtPath.Text;
+            var newDotaPath = SteamPaths.GetDota2Path(newSteamPath.TrimEnd(new char[] { '/', '\\' }));
             if (SteamPaths.CheckDota2Path(newDotaPath))
             {
                 txtDotoPath.Text = newDotaPath.Replace('/', '\\');

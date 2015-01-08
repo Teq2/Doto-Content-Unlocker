@@ -21,6 +21,7 @@ namespace Doto_Unlocker.Model
         const string installedMark = "// installed:";
         const string scriptExt = ".txt";
         readonly string dotaPath;
+        Announcer defaultAnnouncer;
 
         private VpkArchive arc;
         private VdfNode schema;
@@ -58,7 +59,7 @@ namespace Doto_Unlocker.Model
                     {
                         string anouncer = firststLine.Substring(installedMark.Length);
                         var ann = announcers.SingleOrDefault(a => a.NameInternal == anouncer);
-                        if (ann != null)
+                        if (ann != null && ann.IconLarge != null)
                         {
                             iconData = arc.ReadFile(ann.IconLarge);
                         }
@@ -183,6 +184,18 @@ namespace Doto_Unlocker.Model
             this.dotaPath = dotaPath + "/dota/";
         }
 
+        private Announcer CreateDefaultAnnouncer()
+        {
+            string voScript = this.dotaPath + voScriptsPath + defaultName + scriptExt;
+            string talkerScript = this.dotaPath + talkerScriptsPath + defaultName + scriptExt;
+
+            Announcer announcer = new Announcer();
+            announcer.Name = "Default";
+            announcer.NameInternal = defaultNameInternal;
+            announcer.Thumbnail = Image.FromStream(new MemoryStream(arc.ReadFile(iconDefaultDummy)), false, false);
+            return announcer;
+        }
+
         private void InitializeList()
         {
             announcers = new List<Announcer>();
@@ -214,6 +227,9 @@ namespace Doto_Unlocker.Model
                 ann.IconLarge = iconLargeFileinfo != null ? iconLargeFileinfo : iconFileinfo;
                 announcers.Add(ann);
             }
+
+            defaultAnnouncer = CreateDefaultAnnouncer();
+            announcers.Add(defaultAnnouncer);
         }
 
         bool FileFinder(VpkEntry file, string filename)

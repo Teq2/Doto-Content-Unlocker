@@ -131,7 +131,7 @@ namespace Doto_Unlocker.Model
             hud.Thumbnail = Image.FromStream(new MemoryStream(infoFileRaw), false, false);
 
             // files
-            string filesPath = hudsPath + hud.NameInternal;
+            string filesPath = hudsPath + hud.NameInternal + "/";
             var hudFilesSet = hudsFiles.Where((file_entry) => file_entry.Path.StartsWith(filesPath, StringComparison.OrdinalIgnoreCase));
             hud.Files = hudFilesSet.ToList();
 
