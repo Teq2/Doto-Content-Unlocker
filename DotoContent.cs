@@ -94,6 +94,12 @@ namespace Doto_Unlocker
                 view.ShowErr("Dota 2 content directory not found. Make sure game properly installed and check game cache integrity.");
                 failed = true;
             }
+            catch (VpkFileIOException e)
+            {
+                view.ShowErr("Access to vpk archive failed.\r\n\r\nFile name: \"" + ((VpkFileIOException)e).VpkFileName + 
+                    "\"\r\nMake sure Dota 2 client isn't running, if it, close game client and try again.");
+                failed = true;
+            }
             catch (InvalidVpkFileStructureException e)
             {
                 view.ShowErr(string.Format("Invalid Dota 2 file archive structure. Fail type: {0}", e.FailType));
