@@ -109,7 +109,7 @@ namespace Doto_Unlocker.Model
             {
                 // trying to get schema-info
                 var path = vtfFiles[i].FullPath;
-                var lsInfo = lssInfoList.SingleOrDefault(entry => path.EndsWith(entry["visuals"][0]["asset"] + ".vtf", StringComparison.OrdinalIgnoreCase));
+                var lsInfo = lssInfoList.FirstOrDefault(entry => path.EndsWith(entry["visuals"][0]["asset"] + ".vtf", StringComparison.OrdinalIgnoreCase));
                 if (lsInfo == null) continue; // present in 'loadingscreens' folder but not in schema
                 var screen = new LS();
                 screen.Name = lsInfo["name"].Val.Replace(" Loading Screen", "");
