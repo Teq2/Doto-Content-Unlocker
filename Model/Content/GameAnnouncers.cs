@@ -26,52 +26,39 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
-using MetroFramework;
-using MetroFramework.Controls;
-using MetroFramework.Drawing;
+using Doto_Unlocker.VDF;
+using Doto_Unlocker.VPK;
 
-namespace Doto_Unlocker.Controls
+namespace Doto_Unlocker.Model
 {
-    /*
-        BUGFIXES:
-            1. Scrolling value out of REAL range
-            2. Unable to decrease Value if step > curValue
-    */
-
-    class MetroScrollBar2: MetroScrollBar
+    class GameAnnouncers: Announcers
     {
-        public MetroScrollBar2()
+        const string ann_category = "announcers";
+
+        override protected string defaultName
         {
-            Scroll += ScrollFix;
+            get { return "announcer"; }
         }
 
-        private void ScrollFix(object sender, ScrollEventArgs e)
+        override protected string defaultNameInternal
         {
-            var maxVal = Maximum - LargeChange + 1;
-            if (e.NewValue > maxVal)
-            {
-                Value = e.NewValue = maxVal;
-            }
+            get { return "npc_dota_hero_announcer"; }
         }
 
-        protected override void OnMouseWheel(MouseEventArgs e)
+        override protected string itemsSlot
         {
-            base.OnMouseWheel(e);
-
-            int v = e.Delta / 120 * (Maximum - Minimum) / MouseWheelBarPartitions;
-
-            if (Orientation == MetroScrollOrientation.Vertical)
-            {
-                if (v < Value)
-                    Value -= v;
-                else
-                    Value = 0;
-            }
-            else
-            {
-                Value += v;
-            }
+            get { return "announcer"; }
         }
+
+        public override string ID
+        {
+            get { return ann_category; }
+        }
+        public static IContentProvider CreateInstance(VPK.VpkArchive vpk, VDF.VdfNode contentSchema, string contentFilesPath)
+        {
+            return new GameAnnouncers(vpk, contentSchema, contentFilesPath);
+        }
+
+        private GameAnnouncers(VpkArchive vpk, VdfNode schema, string dotaPath) : base(vpk, schema, dotaPath) { }
     }
 }

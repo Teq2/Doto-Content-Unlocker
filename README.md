@@ -1,15 +1,19 @@
 # Doto-Content-Unlocker
 =====================
 
-Program lets user select any Loading screen, HUD, Announcer, Mega-Kills announcer presented in the 'Dota 2' game. Program replaces 'Default' content files and requires -override_vpk launch param for dota 2.
+Program lets user select any Loading screen, HUD, Announcer, Mega-Kills announcer presented in the 'Dota 2' game. Program replaces 'Default' content files and requires "-enable_addons -dashboard dcu" as launch params for dota 2.
+
+## features: 
+1. Absolutely safe (no modifications of client files at all)
+2. Uses only game-client data
+3. Doesn't requires updates on client update
+4. Works in mmr (of course)
 
 ## How to use: 
 1. Run program
 2. Select content
 3. Install it by clicking left-button
-
-## Note:
-Program makes 1 change in vpk-file (scenes/scenes.image) for unlocking all announcers, it's absolutely safe for user and doesn't affects executable files of the game.
+4. Run dota2 with parameters: -enable_addons -dashboard dcu
 
 ## Presented in project:
 * VPK parser

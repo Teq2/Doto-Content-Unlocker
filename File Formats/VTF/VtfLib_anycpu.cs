@@ -30,9 +30,6 @@ using System.Threading.Tasks;
 
 namespace Doto_Unlocker
 {
-    /// <summary>
-    /// WARNING: x64 version of VTFLib is 30% slower than x86!
-    /// </summary>
     public static class VTFLib
     {
         #region Enumerations
@@ -286,46 +283,194 @@ namespace Doto_Unlocker
         }
         #endregion
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public unsafe static extern bool vlInitialize();
+        public static class x86
+        {
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlInitialize();
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        public unsafe static extern void vlShutdown();
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern void vlShutdown();
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public unsafe static extern bool vlCreateImage(uint* uiImage);
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlCreateImage(uint* uiImage);
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        public unsafe static extern void vlDeleteImage(uint uiImage);
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern void vlDeleteImage(uint uiImage);
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public unsafe static extern bool vlBindImage(uint uiImage);
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlBindImage(uint uiImage);
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public unsafe static extern bool vlImageConvert(byte* lpSource, byte* lpDest, uint uiWidth, uint uiHeight, ImageFormat SourceFormat, ImageFormat DestFormat);
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlImageConvert(byte* lpSource, byte* lpDest, uint uiWidth, uint uiHeight, ImageFormat SourceFormat, ImageFormat DestFormat);
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        [return: MarshalAs(UnmanagedType.U1)]
-        public unsafe static extern bool vlImageLoadLump(void* lpData, uint uiBufferSize, [MarshalAs(UnmanagedType.U1)]bool bHeaderOnly);
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlImageLoadLump(void* lpData, uint uiBufferSize, [MarshalAs(UnmanagedType.U1)]bool bHeaderOnly);
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        public unsafe static extern uint vlImageGetWidth();
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern uint vlImageGetWidth();
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        public unsafe static extern uint vlImageGetHeight();
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern uint vlImageGetHeight();
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        public unsafe static extern ImageFormat vlImageGetFormat();
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern ImageFormat vlImageGetFormat();
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        public unsafe static extern byte* vlImageGetData(uint uiFrame, uint uiFace, uint uiSlice, uint uiMipmapLevel);
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern byte* vlImageGetData(uint uiFrame, uint uiFace, uint uiSlice, uint uiMipmapLevel);
 
-        [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
-        public unsafe static extern IntPtr vlGetLastError();
+            [DllImport("VTFLib.x86.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern IntPtr vlGetLastError();
+        }
+
+        public static class x64
+        {
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlInitialize();
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern void vlShutdown();
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlCreateImage(uint* uiImage);
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern void vlDeleteImage(uint uiImage);
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlBindImage(uint uiImage);
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlImageConvert(byte* lpSource, byte* lpDest, uint uiWidth, uint uiHeight, ImageFormat SourceFormat, ImageFormat DestFormat);
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public unsafe static extern bool vlImageLoadLump(void* lpData, uint uiBufferSize, [MarshalAs(UnmanagedType.U1)]bool bHeaderOnly);
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern uint vlImageGetWidth();
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern uint vlImageGetHeight();
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern ImageFormat vlImageGetFormat();
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern byte* vlImageGetData(uint uiFrame, uint uiFace, uint uiSlice, uint uiMipmapLevel);
+
+            [DllImport("VTFLib.x64.dll", CallingConvention = CallingConvention.Cdecl)]
+            public unsafe static extern IntPtr vlGetLastError();
+        }
+
+        private static bool Is64 = Environment.Is64BitProcess;
+
+        //
+        // VTFLib
+        //
+        public static bool vlInitialize()
+        {
+            if (Is64)
+                return x64.vlInitialize();
+            else
+                return x86.vlInitialize();
+        }
+
+        public static void vlShutdown()
+        {
+            if (Is64)
+                x64.vlShutdown();
+            else
+                x86.vlShutdown();
+        }
+
+        public unsafe static bool vlCreateImage(uint* uiImage)
+        {
+            if (Is64)
+                return x64.vlCreateImage(uiImage);
+            else
+                return x86.vlCreateImage(uiImage);
+        }
+
+        public unsafe static void vlDeleteImage(uint uiImage)
+        {
+            if (Is64)
+                x64.vlDeleteImage(uiImage);
+            else
+                x86.vlDeleteImage(uiImage);
+        }
+
+        public unsafe static bool vlBindImage(uint uiImage)
+        {
+            if (Is64)
+                return x64.vlBindImage(uiImage);
+            else
+                return x86.vlBindImage(uiImage);
+        }
+
+        public unsafe static bool vlImageConvert(byte* lpSource, byte* lpDest, uint uiWidth, uint uiHeight, ImageFormat SourceFormat, ImageFormat DestFormat)
+        {
+            if (Is64)
+                return x64.vlImageConvert(lpSource, lpDest, uiWidth, uiHeight, SourceFormat, DestFormat);
+            else
+                return x86.vlImageConvert(lpSource, lpDest, uiWidth, uiHeight, SourceFormat, DestFormat);
+        }
+
+        public unsafe static bool vlImageLoadLump(void* lpData, uint uiBufferSize, bool bHeaderOnly)
+        {
+            if (Is64)
+                return x64.vlImageLoadLump(lpData, uiBufferSize, bHeaderOnly);
+            else
+                return x86.vlImageLoadLump(lpData, uiBufferSize, bHeaderOnly);
+        }
+
+        public unsafe static uint vlImageGetWidth()
+        {
+            if (Is64)
+                return x64.vlImageGetWidth();
+            else
+                return x86.vlImageGetWidth();
+        }
+
+        public unsafe static uint vlImageGetHeight()
+        {
+            if (Is64)
+                return x64.vlImageGetHeight();
+            else
+                return x86.vlImageGetHeight();
+        }
+
+        public unsafe static ImageFormat vlImageGetFormat()
+        {
+            if (Is64)
+                return x64.vlImageGetFormat();
+            else
+                return x86.vlImageGetFormat();
+        }
+
+        public unsafe static byte* vlImageGetData(uint uiFrame, uint uiFace, uint uiSlice, uint uiMipmapLevel)
+        {
+            if (Is64)
+                return x64.vlImageGetData(uiFrame, uiFace, uiSlice, uiMipmapLevel);
+            else
+                return x86.vlImageGetData(uiFrame, uiFace, uiSlice, uiMipmapLevel);
+        }
+
+        public unsafe static IntPtr vlGetLastError()
+        {
+            if (Is64)
+                return x64.vlGetLastError();
+            else
+                return x86.vlGetLastError();
+        }
         
     }
 }

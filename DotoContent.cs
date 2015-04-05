@@ -30,6 +30,7 @@ using System.Threading.Tasks;
 using Doto_Unlocker.Model;
 using Doto_Unlocker.VPK;
 using MetroFramework;
+using System.IO;
 
 namespace Doto_Unlocker
 {
@@ -43,149 +44,44 @@ namespace Doto_Unlocker
 
     class DotoContent
     {
-        class AvailableProvider
-        {
-            public string Name { get; set;  }
-            public ContentProviderFactory Ctor { get; set; }
-        }
-
+        const string dataSubDir = "dota";
+        const string archiveName = "pak01";
         const string schemaPath = "scripts/items/items_game.txt";
 
         MainForm view;
-        Settings settings = Settings.Instance;
         Model.IContentProvider[] providers;
         readonly AvailableProvider[] availableProviders;
 
         public DotoContent(MainForm view) 
-        {
+        { 
             this.view = view;
-            Settings.Instance.DotaPathChanged += Settings_DotaPathChanged;
+            Settings.DotaPathChanged += Settings_DotaPathChanged;
             
             // content providers
             availableProviders = new AvailableProvider[] { 
-                new AvailableProvider { Name = "Loading Screens", Ctor = Model.LoadingScreens.CreateInstance}, 
-                new AvailableProvider { Name = "HUDs", Ctor = Model.Huds.CreateInstance}, 
-                new AvailableProvider { Name = "Announcers", Ctor = Model.Announcers.CreateInstance}, 
-                new AvailableProvider { Name = "Mega-kills", Ctor = Model.MegaKillsAnnouncers.CreateInstance} };
+                new AvailableProvider { Name = "Loading Screens", CreateInstance = Model.LoadingScreens.CreateInstance}, 
+                new AvailableProvider { Name = "HUDs", CreateInstance = Model.Huds.CreateInstance}, 
+                new AvailableProvider { Name = "Announcers", CreateInstance = Model.GameAnnouncers.CreateInstance}, 
+                new AvailableProvider { Name = "Mega-kills", CreateInstance = Model.MegaKillsAnnouncers.CreateInstance} };
         }
 
-        public List<string> ContentTypes()
+        public IEnumerable<string> ContentTypes()
         {
-            return availableProviders.Select(p=>p.Name).ToList();
-        }
-
-        bool Initialized()
-        {
-            return providers != null;
-        }
-
-        void Settings_DotaPathChanged(PathEventArgs e)
-        {
-            UnInitialize(true);
-        }
-
-        void UnInitialize(bool reload = false)
-        {
-            providers = null;
-            view.InvalidateContent(reload);
-        }
-
-        void Initialize()
-        {
-            bool failed = false;
-            try
-            {
-                var arc = new VPK.VpkArchive(Settings.Instance.Dota2Path + @"\dota", "pak01");
-                var schema = LoadSchema(arc);
-                providers = new IContentProvider[availableProviders.Length];
-                for (int i = 0; i < availableProviders.Length; i++)
-                {
-                    providers[i] = availableProviders[i].Ctor(arc, schema, Settings.Instance.Dota2Path);
-                }
-
-                // unlock
-                var scenes = new Doto_Unlocker.Model.ScenesUnlocker(arc, schema, Settings.Instance.Dota2Path);
-                scenes.UnlockAnnouncers();
-            }
-            catch (System.IO.FileNotFoundException)
-            {
-                view.ShowErr("Dota 2 file archive not found. Make sure game properly installed and check game cache integrity.");
-                failed = true;
-            }
-            catch (System.IO.DirectoryNotFoundException)
-            {
-                view.ShowErr("Dota 2 content directory not found. Make sure game properly installed and check game cache integrity.");
-                failed = true;
-            }
-            catch (VpkFileIOException e)
-            {
-                view.ShowErr("Access to vpk archive failed.\r\n\r\nFile name: \"" + ((VpkFileIOException)e).VpkFileName + 
-                    "\"\r\nMake sure Dota 2 client isn't running, if it, close game client and try again.");
-                failed = true;
-            }
-            catch (InvalidVpkFileStructureException e)
-            {
-                view.ShowErr(string.Format("Invalid Dota 2 file archive structure. Fail type: {0}", e.FailType));
-                failed = true;
-            }
-            finally
-            {
-                if (failed)
-                {
-                    UnInitialize();
-                }
-            }
+            return availableProviders.Select(p => p.Name);
         }
 
         public Task ContentRequest(int contentTypeIndex)
         {
-            if (!Initialized())
-            {
-                if (Settings.Instance.SteamPath != null && Settings.Instance.Dota2Path != null)
-                    Initialize();
-                else
-                    view.ShowErr("Current Steam Client and Dota 2 paths are invalid.\r\nPlease set correct paths in 'Settings' window.");
+            if (!Initialized()) Initialize();
+            try {
+                if (Initialized())
+                    return LoadContentAsync(contentTypeIndex);
             }
-
-            if (Initialized())
-            {
-                return LoadContentAsync(contentTypeIndex);
+            catch (Exception e) {
+                var inner = e is AggregateException ? e.InnerException : e; // interested only in first exception, Wait() used only in LoadingScreens.LoadLoadingScreens()
+                CommonHandler(inner);
             }
-            else
-            {
-                return Task.FromResult<object>(null);
-            }
-        }
-
-        async Task LoadContentAsync(int providerId)
-        {
-            IEnumerable<Model.IGraphicContent> images = null;
-            Model.IGraphicContent current = null;
-            Image currentImg = null;
-
-            try
-            {
-                await Task.Run(() =>
-                {
-                    images = providers[providerId].GetContentList();
-                    currentImg = providers[providerId].GetInstalledContentImage();
-                });
-            }
-            catch (Exception e)
-            {    
-                var inner = e is AggregateException? e.InnerException: e; // interested only in first exception
-                Handler(inner);
-            }
-
-            if (currentImg != null)
-            {
-                string name;
-                Settings.Instance.LastInstalled.TryGetValue(providers[providerId].ID, out name);
-                current = new GraphicContent() { Name = name, Image = currentImg };
-            }
-
-            view.LoadContentCallback(providerId, images);
-            view.CurrentContentCallback(providerId, current);
+            return Task.FromResult<object>(null);
         }
 
         public async Task SetCurrent(int contentTypeIndex, int contentIndex)
@@ -199,49 +95,159 @@ namespace Doto_Unlocker
                     if (imgFull != null)
                     {
                         cur = new GraphicContent { Name = cur.Name, Image = imgFull };
-                        Settings.Instance.LastInstalled[providers[contentTypeIndex].ID] = cur.Name;
-                        Settings.Instance.Save();
+                        Settings.LastInstalled[providers[contentTypeIndex].ID] = cur.Name;
+                        Settings.Save();
                         view.CurrentContentCallback(contentTypeIndex, cur);
                     }
                 }
             }
-            catch (System.IO.IOException ioEx)
-            {
-                view.ShowErr("System IO exception occured.\r\n\r\"" + ioEx.Message + "\"");
-            }
             catch (Exception e)
             {
-                Handler(e);
+                CommonHandler(e);
             }
         }
 
-        void Handler(Exception ex)
+        private async Task LoadContentAsync(int providerId)
         {
-            if (ex is VpkFileIOException)
+            IEnumerable<Model.IGraphicContent> images = null;
+            Model.IGraphicContent current = null;
+            Image currentImg = null;
+
+            await Task.Run(() =>
             {
-                view.ShowErr("Access to vpk archive failed.\r\n\r\nFile name: \"" + ((VpkFileIOException)ex).VpkFileName + "\"");
+                images = providers[providerId].GetContentList();
+                currentImg = providers[providerId].GetInstalledContentImage();
+            });
+
+            if (currentImg != null) {
+                string name;
+                Settings.LastInstalled.TryGetValue(providers[providerId].ID, out name);
+                current = new GraphicContent() { Name = name, Image = currentImg };
             }
+
+            view.LoadContentCallback(providerId, images);
+            view.CurrentContentCallback(providerId, current);
+        }
+
+        private bool Initialize()
+        {
+            bool success = false;
+            try
+            {
+                if (Settings.SteamPath != null && Settings.Dota2Path != null) /* they can't be empty, only null */
+                {
+                    var dotaDataDir = Path.Combine(Settings.Dota2Path, dataSubDir);
+                    var arc = new VPK.VpkArchive(dotaDataDir, archiveName);
+                    var schema = LoadSchema(arc);
+
+                    providers = new IContentProvider[availableProviders.Length];
+                    for (int i = 0; i < availableProviders.Length; i++)
+                        providers[i] = availableProviders[i].CreateInstance(arc, schema, dotaDataDir);
+
+                    success = true;
+                }
+                else
+                    ShowErr("Current Steam Client and Dota 2 paths are invalid.\r\nPlease set correct paths in 'Settings' window.");
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                ShowErr("Dota 2 file archive not found. Make sure game properly installed and check game cache integrity.");
+            }
+            catch (System.IO.DirectoryNotFoundException)
+            {
+                ShowErr("Dota 2 content directory not found. Make sure game properly installed and check game cache integrity.");
+            }
+            catch (VpkFileIOException e)
+            {
+                ShowErr("Access to vpk archive failed", "File name: \"" + ((VpkFileIOException)e).VpkFileName +
+                    "\"\r\nMake sure Dota 2 client isn't running, if it, close game client and try again.", false);
+            }
+            catch (InvalidVpkFileStructureException e)
+            {
+                ShowErr(string.Format("Invalid Dota 2 file archive structure. Fail type: {0}", e.FailType));
+            }
+            finally
+            {
+                if (!success)
+                {
+                    UnInitialize();
+                }
+            }
+            return success;
+        }
+
+        private bool Initialized()
+        {
+            return providers != null;
+        }
+
+        private void Settings_DotaPathChanged(PathEventArgs e)
+        {
+            UnInitialize(true);
+        }
+
+        private void UnInitialize(bool reload = false)
+        {
+            providers = null;
+            view.InvalidateContent(reload);
+        }
+
+        private void CommonHandler(Exception ex)
+        {
+            if (ex is System.IO.IOException)
+                ShowErr("System IO error:", ex.Message);
+
+            else if (ex is UnauthorizedAccessException)
+                ShowErr("System security error:", ex.Message);
+
+            else if (ex is VpkFileIOException)
+                ShowErr("Access to vpk archive failed.", "File name: \"" + ((VpkFileIOException)ex).VpkFileName + "\"", false);
+
             else if (ex is VpkFileOutdatedException)
             {
                 var outdated = (VpkFileOutdatedException)ex;
-                view.ShowErr(string.Format("Vpk file had been updated after program has opened.\r\n\r\n" +
-                    "File name: \"{0}\"\r\nVpk dir parsed: {1}\r\nFile updated: {2}",
-                    outdated.VpkFileName, outdated.DirLoaded, outdated.LastUpdated));
+                ShowErr("Vpk file had been updated after program has opened.", string.Format("File name: \"{0}\"\r\nVpk dir parsed: {1}\r\nFile updated: {2}",
+                    outdated.VpkFileName, outdated.DirLoaded, outdated.LastUpdated), false);
             }
             else if (ex is ArgumentException)
-            {
-                view.ShowErr("Unknown format error occured.\r\n\r\"" + ((ArgumentException)ex).Message + "\"");
-            }
+                ShowErr("Unknown format error:", ex.Message);
+
+            else
+                ShowErr("Unexpected error:", string.Format("Message: {0}\r\nStacktrace:{1}", ex.Message, ex.StackTrace));
 
             view.ShowInfo("\"Doto Content Unlocker\" restart is recommended");
             UnInitialize();
         }
 
-        VDF.VdfNode LoadSchema(VpkArchive arc)
+        private void ShowErr(string err, string desc=null, bool quotted=true)
         {
-            var raw = arc.ReadFile(schemaPath);
-            var text = Encoding.ASCII.GetString(raw);
-            return VDF.VdfParser.Parse(text);
+            if (string.IsNullOrEmpty(desc))
+                view.ShowErr(err);
+            else
+            {
+                string quote = quotted ? "\"" : string.Empty;
+                view.ShowErr(string.Format("{0}\r\n{2}{1}{2}", err, desc, quote));
+            }
+        }
+
+        private VDF.VdfNode LoadSchema(VpkArchive arc)
+        {
+            byte[] rawData = arc.ReadFile(schemaPath);
+            if (rawData != null)
+            {
+                var text = Encoding.ASCII.GetString(rawData);
+                return VDF.VdfParser.Parse(text);
+            }
+            else
+                return null;
+        }
+
+        private delegate IContentProvider ContentProviderFactory(VPK.VpkArchive vpk, VDF.VdfNode contentSchema, string contentFilesPath);
+
+        private class AvailableProvider
+        {
+            public string Name;
+            public ContentProviderFactory CreateInstance;
         }
     }
 }

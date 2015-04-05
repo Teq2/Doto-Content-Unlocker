@@ -34,28 +34,31 @@ using Doto_Unlocker.VPK;
 
 namespace Doto_Unlocker.Model
 {
-    class LoadingScreens : IContentProvider
+    class LoadingScreens : ContentProvider
     {
         class LS
         {
             public string Name;
             public string InternalName;
-            public VpkEntry TextureFile;
+            public VpkFile TextureFile;
             public Image Thumbnail;
         }
 
         const string ls_category = "loadingscreens";
-        const string defaultScreenPath = "materials/console/dashboard_loading_embers.vtf";
-        readonly string dotaPath;
-
-        VpkArchive arc;
-        VdfNode schema;
+        const string materialTypeExt = "vmt";
+        const string installedScreenPath = "materials/console/dashboard_loading_dcu.vtf";
+        const string vguiFileText = "\"UnlitGeneric\" { " +
+            "\"$basetexture\"	\"console\\dashboard_loading_dcu\"\r\n" +
+            "\"$translucent\" \"1\"\r\n" +
+            "\"$ignorez\" \"1\"\r\n" +
+            "\"$vertexcolor\" \"1\"\r\n" +
+	        "\"$vertexalpha\" \"1\" }";
         List<LS> screens;
         Thumbnails cache;
 
         #region properties
 
-        public string ID
+        public override string ID
         {
             get
             {
@@ -99,11 +102,9 @@ namespace Doto_Unlocker.Model
 
         #endregion
 
-        private LoadingScreens(VpkArchive vpk, VdfNode schema, string dotaPath)
+        public LoadingScreens(VpkArchive vpk, VdfNode schema, string dotaDataPath)
+            : base(vpk, schema, dotaDataPath)
         {
-            arc = vpk;
-            this.schema = schema;
-            this.dotaPath = dotaPath + "/dota/";
             cache = new Thumbnails(ls_category); 
         }
 
@@ -114,44 +115,44 @@ namespace Doto_Unlocker.Model
         
         void LoadLoadingScreens()
         {
-            var lssInfo =  from item in schema["items"].ChildNodes
+            var lsSchema =  from item in schema["items"].ChildNodes
                               let prefab = item["prefab"]
-                              where prefab != null && prefab == "loading_screen"
+                              where prefab == "loading_screen" /* equals: prefab.Val.Equal("...") */
                               //let created = item["creation_date"]
                               //orderby created != null ? DateTime.Parse(created) : DateTime.MinValue
                               //descending
-                              // {USING VTF-ORDER INSTEAD}
+                              /* Using vtf-files order is better, "creation_date" isn't always correct */
                           select item;
-            var lssInfoList = lssInfo.ToList();
+            var lsSchemaList = lsSchema.ToList();
             var vtfFiles = arc.FindFiles("materials/console/loadingscreens/", "vtf");
-            screens = new List<LS>();
+            this.screens = new List<LS>();
             var tasks = new List<Task<Image>>();
 
-            //foreach (var lsInfo in lssInfo)
             for (int i = 0; i < vtfFiles.Length; i++)
             {
                 // trying to get schema-info
-                var path = vtfFiles[i].FullPath;
-                var lsInfo = lssInfoList.FirstOrDefault(entry => path.EndsWith(entry["visuals"][0]["asset"] + ".vtf", StringComparison.OrdinalIgnoreCase));
-                if (lsInfo == null) continue; // present in 'loadingscreens' folder but not in schema
+                var path = vtfFiles[i].Path + '/' + vtfFiles[i].Name;
+                // find schema's entry for current vtf (there can be >1 similar entries for 1 loadingscreen)
+                VdfNode lsInfo = lsSchemaList.FirstOrDefault(entry => path.EndsWith(entry["visuals"][0]["asset"], StringComparison.OrdinalIgnoreCase));
+                // presented in 'loadingscreens' directory but not in the schema
+                if (lsInfo == null) continue; 
+
                 var screen = new LS();
-                screen.Name = lsInfo["name"].Val.Replace(" Loading Screen", "");
+                screen.Name = lsInfo["name"].Val.Replace(" Loading Screen", string.Empty);
                 string imgInv = lsInfo["image_inventory"];
                 screen.InternalName = imgInv.Substring(imgInv.LastIndexOf('/') + 1);
                 screen.TextureFile = vtfFiles[i];
-                //string path = lsInfo["visuals"][0]["asset"] + ".vtf";
-                //screen.TextureFile = vtfFiles.Single((file_entry) => file_entry.FullPath.EndsWith(path, StringComparison.OrdinalIgnoreCase));
-                var task = LoadThumbnail(screen); // can't use await here
+                var task = LoadThumbnail(screen); /* can't use await here */
 
                 tasks.Add(task);
                 screens.Add(screen);
-                if (task.IsFaulted) break;// instant VPK exception         
+                // instant VPK exception 
+                if (task.IsFaulted) break;         
             }
+            // thumbnails building
             Task.WaitAll(tasks.ToArray());
             for (int i = 0; i < tasks.Count; i++)
-            {
                 screens[i].Thumbnail = tasks[i].Result;
-            }
         }
 
         /* Timeline:
@@ -163,66 +164,60 @@ namespace Doto_Unlocker.Model
         async Task<Image> LoadThumbnail(LS screen)
         {
             var thumb = cache.GetThumbnail(screen.InternalName);
-            //Image thumb = null;
-            if (thumb != null)
-            {
-                return thumb;
-            }
-            else // create new thumbnail
-            {
+            if (thumb == null) {
                 var vtfData = arc.ReadFile(screen.TextureFile);
-
                 await Task<Image>.Run(() =>
                 {
-                    Image imgFull = null;
-                    imgFull = VTF.Vtf.VtfToImage(vtfData);
+                    Image imgFull = VTF.Vtf.VtfToImage(vtfData);
                     thumb = new Bitmap(imgFull, thumbWidht, thumbHeight);
 
                     cache.StoreThumbnail(screen.InternalName, thumb);
-                });
-                return thumb;                
-            }     
+                });              
+            }
+            return thumb;
         }
 
-        public IEnumerable<IGraphicContent> GetContentList()
+        public override IEnumerable<IGraphicContent> GetContentList()
         {
             if (screens == null || screens.Count == 0) LoadLoadingScreens();
-
             int id = 0;
             return from ls in screens select new GraphicContent { ID = id++, Name = ls.Name, Image = ls.Thumbnail };
         }
 
-        public Image GetInstalledContentImage()
+        public override Image GetInstalledContentImage()
         {
             byte[] vtfData;
-            if (File.Exists(dotaPath + defaultScreenPath))
-            {
-                vtfData = File.ReadAllBytes(dotaPath + defaultScreenPath);
+            var filePath = Path.Combine(dotaDataPath, installedScreenPath);
+            if (File.Exists(filePath)) {
+                vtfData = File.ReadAllBytes(filePath);
             }
             else
-            {
-                vtfData = arc.ReadFile(defaultScreenPath);
-            }
-            var img = VTF.Vtf.VtfToImage(vtfData);
+                vtfData = arc.ReadFile(installedScreenPath);
 
+            var img = VTF.Vtf.VtfToImage(vtfData);
             return img;
         }
 
-        public IGraphicContent InstallContent(int ID)
+        public override IGraphicContent InstallContent(int ID)
         {
-            var filePath = dotaPath + defaultScreenPath;
+            var filePath = Path.Combine(dotaDataPath, installedScreenPath);
 
-            if (!File.Exists(filePath))
-            {
+            if (!File.Exists(filePath)) {
                 var dir = Path.GetDirectoryName(filePath);
                 Directory.CreateDirectory(dir);
             }
 
-            using (var fs = new FileStream(filePath, FileMode.Create))
-            {
+            // .vtf
+            using (var fs = new FileStream(filePath, FileMode.Create)) {
                 var newData = arc.ReadFile(screens[ID].TextureFile);
                 fs.Write(newData, 0, newData.Length);
             }
+
+            // .vmt
+            filePath = Path.ChangeExtension(filePath, materialTypeExt);
+            if (!File.Exists(filePath))
+                using (var fs = new StreamWriter(filePath, false))
+                    fs.Write(vguiFileText);
 
             return new GraphicContent() { ID = ID, Name = screens[ID].Name, Image = screens[ID].Thumbnail };
         }

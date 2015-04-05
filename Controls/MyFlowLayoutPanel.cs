@@ -59,7 +59,7 @@ namespace Doto_Unlocker.Controls
 
             if (!DesignMode)
             {
-                if (m.Msg == WM_WINDOWPOSCHANGING)
+                //if (m.Msg == WM_WINDOWPOSCHANGING)
                 {
                     uint style = GetWindowLong(this.Handle, GW_STYLE);
                     if ((style & 0x300000) != 0) // 0x300000 = WS_VSCROLL|WS_HSCROLL

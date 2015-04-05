@@ -29,6 +29,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using MetroFramework;
+using System.Text.RegularExpressions;
 
 namespace Doto_Unlocker
 {
@@ -52,30 +53,29 @@ namespace Doto_Unlocker
     public delegate void PathChangedEventHandler (PathEventArgs e);
     public delegate void StyleChangedEventHandler(StyleChangedEventArgs e);
 
-    [DataContract]
-    public class Settings
+    public static class Settings
     {
-        const string settingsFile = "dcu.cfg";
+        private const string settingsFile = "dcu.cfg";
+        private static readonly string settingsFilePath;
 
-        public event PathChangedEventHandler SteamPathChanged;
-        public event PathChangedEventHandler DotaPathChanged;
-        public event StyleChangedEventHandler StyleChanged;
+        public static event PathChangedEventHandler SteamPathChanged;
+        public static event PathChangedEventHandler DotaPathChanged;
+        public static event StyleChangedEventHandler StyleChanged;
 
-        static Settings instance = new Settings();
-        public static Settings Instance
+        static string assemblyDirectory;
+        public static string AssemblyDirectory
         {
             get
             {
-                return instance;
+                return assemblyDirectory;
             }
         }
 
         /// <summary>
         /// After initialization contains Valid path or Null
         /// </summary>
-        [DataMember]
-        string steamPath;
-        public string SteamPath
+        static string steamPath;
+        public static string SteamPath
         {
             get
             {
@@ -83,10 +83,11 @@ namespace Doto_Unlocker
             }
             set
             {
-                bool eq = ComparePathes(steamPath, value); 
-                steamPath = value;
-                if (!eq)
+                string newPath = PreprocessPathValue(value);
+
+                if (!ComparePaths(steamPath, newPath))
                 {
+                    steamPath = newPath;
                     PathChangedEventHandler handler = SteamPathChanged;
                     if (handler != null) handler(new PathEventArgs() { NewPath = steamPath });
                 }
@@ -96,9 +97,8 @@ namespace Doto_Unlocker
         /// <summary>
         /// After initialization contains Valid path or Null
         /// </summary>
-        [DataMember]
-        string dota2Path;
-        public string Dota2Path
+        static string dota2Path;
+        public static string Dota2Path
         {
             get
             {
@@ -106,19 +106,19 @@ namespace Doto_Unlocker
             }
             set
             {
-                bool eq = ComparePathes(dota2Path, value);
-                dota2Path = value;
-                if (!eq)
+                string newPath = PreprocessPathValue(value);
+
+                if (!ComparePaths(dota2Path, newPath))
                 {
+                    dota2Path = newPath;
                     PathChangedEventHandler handler = DotaPathChanged;
                     if (handler != null) handler(new PathEventArgs() { NewPath = dota2Path });
                 }
             }
         }
 
-        [DataMember]
-        private MetroColorStyle style;
-        public MetroColorStyle Style
+        private static MetroColorStyle style;
+        public static MetroColorStyle Style
         {
             get
             {
@@ -132,15 +132,24 @@ namespace Doto_Unlocker
             }
         }
 
-        [DataMember]
-        public Dictionary<string,string> LastInstalled
+        public static Dictionary<string, string> LastInstalled
         {
-            get; private set;
+            get;
+            private set;
         }
 
-        Settings()
+        /// <summary>
+        /// Static field initializers can't be used in this class
+        /// </summary>
+        static Settings()
         {
-            Load();
+            assemblyDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            settingsFilePath = Path.Combine(assemblyDirectory, settingsFile);
+
+            try {
+                Load();
+            }
+            catch (Exception) { /* prevent TypeInitializationException, all problems will be detected on Save(); */ }
 
             if (!SteamPaths.CheckSteamPath(steamPath) || !SteamPaths.CheckDota2Path(dota2Path))
             {
@@ -150,39 +159,77 @@ namespace Doto_Unlocker
             if (LastInstalled == null) LastInstalled = new Dictionary<string, string>();
         }
 
-        bool ComparePathes(string path1, string path2)
+        public static void Save()
         {
-            if (path1 == null) return path1 == path2;
-            return path1.Replace('/', '\\').Equals(path2, StringComparison.InvariantCultureIgnoreCase);
+            var ser = new System.Runtime.Serialization.DataContractSerializer(typeof(SettingsData));
+            using (var s = System.Xml.XmlWriter.Create(settingsFilePath))
+            {
+                ser.WriteObject(s, new SettingsData()
+                {
+                    SteamPath = steamPath,
+                    Dota2Path = dota2Path,
+                    Style = style,
+                    LastInstalled = LastInstalled
+                });
+            }
         }
 
-        void CopyFields(Settings src)
+        private static void Load()
+        {
+            if (!File.Exists(settingsFile)) return;
+            try
+            {
+                var des = new System.Runtime.Serialization.DataContractSerializer(typeof(SettingsData));
+                using (var s = System.Xml.XmlReader.Create(settingsFilePath))
+                {
+                    SettingsData _tmp = (SettingsData)des.ReadObject(s);
+                    CopyFields(_tmp);
+                }
+            }
+            catch (SerializationException)
+            {
+                // file contains wrong formatted data
+                File.Delete(settingsFile);
+            }
+        }
+
+        private static string PreprocessPathValue(string value)
+        {
+            if (value != null)
+                value = Regex.Replace(value, @"[\\|/]+", "/").TrimEnd(' ', '/', '\\');
+            return value;
+        }
+
+        private static bool ComparePaths(string path1, string path2)
+        {
+            if (path1 == null) 
+                return path1 == path2;
+            else
+                return path1.Equals(path2, StringComparison.CurrentCultureIgnoreCase);
+        }
+
+        private static void CopyFields(SettingsData src)
         {
             steamPath = src.SteamPath;
             dota2Path = src.Dota2Path;
-            LastInstalled = src.LastInstalled;
             style = src.Style;
+            LastInstalled = src.LastInstalled;
         }
 
-        void Load(String SettingsFile = settingsFile)
+        /// <summary>
+        /// Used this private class for make Settings class static
+        /// </summary>
+        [DataContract(Name="Settings")]
+        private class SettingsData
         {
-            if (!File.Exists(SettingsFile)) return;
-
-            var des = new System.Runtime.Serialization.DataContractSerializer(typeof(Settings));
-            using (var s = System.Xml.XmlReader.Create(SettingsFile))
-            {
-                Settings _tmp = (Settings) des.ReadObject(s);
-                CopyFields(_tmp);
-            }
-        }
-
-        public void Save(String SettingsFile = settingsFile)
-        {
-            var ser = new System.Runtime.Serialization.DataContractSerializer(typeof(Settings));
-            using (var s = System.Xml.XmlWriter.Create(SettingsFile))
-            {
-                ser.WriteObject(s, this);
-            }
+            [DataMember]
+            public string SteamPath;
+            [DataMember]
+            public string Dota2Path;
+            [DataMember]
+            public MetroColorStyle Style;
+            [DataMember]
+            public Dictionary<string, string> LastInstalled;
         }
     }
 }

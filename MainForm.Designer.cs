@@ -44,6 +44,7 @@
             this.currentContent = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
             this.btnRandom = new MetroFramework.Controls.MetroTile();
+            this.lblVer = new MetroFramework.Controls.MetroLabel();
             ((System.ComponentModel.ISupportInitialize)(this.metroStyleManager1)).BeginInit();
             this.tabControl.SuspendLayout();
             this.rightPanel.SuspendLayout();
@@ -104,11 +105,11 @@
             // metroLabel5
             // 
             this.metroLabel5.AutoSize = true;
-            this.metroLabel5.Location = new System.Drawing.Point(277, 29);
+            this.metroLabel5.Location = new System.Drawing.Point(310, 32);
             this.metroLabel5.Name = "metroLabel5";
-            this.metroLabel5.Size = new System.Drawing.Size(223, 19);
+            this.metroLabel5.Size = new System.Drawing.Size(230, 19);
             this.metroLabel5.TabIndex = 4;
-            this.metroLabel5.Text = "made by Teq (1371117@gmail.com)";
+            this.metroLabel5.Text = ", made by Teq (1371117@gmail.com)";
             // 
             // btnSettings
             // 
@@ -246,11 +247,22 @@
             this.btnRandom.UseTileImage = true;
             this.btnRandom.Click += new System.EventHandler(this.btnRandom_Click);
             // 
+            // lblVer
+            // 
+            this.lblVer.AutoSize = true;
+            this.lblVer.FontSize = MetroFramework.MetroLabelSize.Tall;
+            this.lblVer.Location = new System.Drawing.Point(262, 27);
+            this.lblVer.Name = "lblVer";
+            this.lblVer.Size = new System.Drawing.Size(51, 25);
+            this.lblVer.TabIndex = 11;
+            this.lblVer.Text = "v1.00";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(965, 703);
+            this.Controls.Add(this.lblVer);
             this.Controls.Add(this.tabControl);
             this.Controls.Add(this.rightPanel);
             this.Controls.Add(this.metroLabel5);
@@ -291,6 +303,7 @@
         private System.Windows.Forms.Panel panel1;
         private MetroFramework.Controls.MetroTabPage metroTabPage1;
         private MetroFramework.Controls.MetroTabPage metroTabPage2;
+        private MetroFramework.Controls.MetroLabel lblVer;
     }
 }
 

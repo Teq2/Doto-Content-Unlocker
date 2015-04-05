@@ -21,6 +21,8 @@
  *  OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+using Doto_Unlocker.VDF;
+using Doto_Unlocker.VPK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,5 +40,22 @@ namespace Doto_Unlocker.Model
         IGraphicContent InstallContent(int ID);
     }
 
-    delegate IContentProvider ContentProviderFactory(VPK.VpkArchive vpk, VDF.VdfNode contentSchema, string contentFilesPath);
+    abstract class ContentProvider : IContentProvider
+    {
+        protected readonly VpkArchive arc;
+        protected readonly VdfNode schema;
+        protected readonly string dotaDataPath;
+
+        public abstract string ID { get; }
+        public abstract IEnumerable<IGraphicContent> GetContentList();
+        public abstract System.Drawing.Image GetInstalledContentImage();
+        public abstract IGraphicContent InstallContent(int ID);
+
+        public ContentProvider(VpkArchive vpk, VdfNode schema, string dotaDataPath)
+        {
+            this.arc = vpk;
+            this.schema = schema;
+            this.dotaDataPath = dotaDataPath;
+        }
+    }
 }

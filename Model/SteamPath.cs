@@ -59,12 +59,12 @@ namespace Doto_Unlocker
 
         public static bool CheckSteamPath(string steamPath)
         {
-            return File.Exists(steamPath + "/Steam.exe");
+            return Path.IsPathRooted(steamPath) && File.Exists(steamPath + "/Steam.exe");
         }
 
         public static bool CheckDota2Path(string dotaPath)
         {
-            return File.Exists(dotaPath + "/dota.exe");
+            return Path.IsPathRooted(dotaPath) && File.Exists(dotaPath + "/dota.exe");
         }
 
         public static string DefaultSteamFolder()
@@ -80,9 +80,9 @@ namespace Doto_Unlocker
 
                 if (File.Exists(manifest))
                 {
-                    var data = File.ReadAllText(manifest, Encoding.UTF8);
-                    var nodes = VDF.VdfParser.Parse(data);
-                    var folder = nodes["installdir"];
+                    string data = File.ReadAllText(manifest, Encoding.UTF8);
+                    VDF.VdfNode nodes = VDF.VdfParser.Parse(data);
+                    VDF.VdfNode folder = nodes["installdir"];
                     if (folder != null)
                     {
                         return lib + "/common/" + folder;
@@ -107,7 +107,8 @@ namespace Doto_Unlocker
                 if (folders != null)
                 foreach (var folder_node in folders.ChildNodes)
                 {
-                    yield return folder_node.Val.Replace("\\\\", "/") + "/SteamApps";
+                    if (Path.IsPathRooted(folder_node))
+                        yield return folder_node.Val.Replace("\\\\", "/") + "/SteamApps";
                 }
             }
         }

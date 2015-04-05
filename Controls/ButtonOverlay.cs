@@ -101,7 +101,6 @@ namespace Doto_Unlocker.Controls
             this.Controls.Add(btn);
             btn.Width = 120;
             btn.Height = 50;
-            btn.Text = "";
             btn.FontSize = MetroFramework.MetroButtonSize.Tall;
             btn.FontWeight = MetroFramework.MetroButtonWeight.Regular;
             btn.TabStop = false;

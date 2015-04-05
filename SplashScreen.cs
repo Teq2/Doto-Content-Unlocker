@@ -49,8 +49,8 @@ namespace Doto_Unlocker
 
         void SetOwnerEnabled(bool enabled)
         {
-            SetWindowLong(Owner.Handle, GWL_STYLE, GetWindowLong(Owner.Handle, GWL_STYLE) &
-                ~WS_DISABLED | (enabled ? 0 : WS_DISABLED));
+            // WS_DISABLED doesn't makes form and all her components 'grayed'
+            SetWindowLong(Owner.Handle, GWL_STYLE, GetWindowLong(Owner.Handle, GWL_STYLE) & ~WS_DISABLED | (enabled ? 0 : WS_DISABLED));
             SetForegroundWindow(Owner.Handle);
         }
 
@@ -70,12 +70,6 @@ namespace Doto_Unlocker
         {
             base.OnClosing(e);
             SetOwnerEnabled(true);
-        }
-
-        protected override void OnClosed(EventArgs e)
-        {
-            base.OnClosed(e);
-            
         }
     }
 }

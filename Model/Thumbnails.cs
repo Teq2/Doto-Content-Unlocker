@@ -35,12 +35,12 @@ namespace Doto_Unlocker.Model
 
     class Thumbnails
     {
-        const string cacheDir = "Thumbnail cache\\";
+        const string cacheDir = "Thumbnail cache";
         string thumbnailsDir;
 
         public Thumbnails(string category)
         {
-            thumbnailsDir = cacheDir + category + "\\";
+            thumbnailsDir = Path.Combine(Settings.AssemblyDirectory, cacheDir, category);
 
             if (!Directory.Exists(thumbnailsDir))
             {
@@ -50,7 +50,7 @@ namespace Doto_Unlocker.Model
 
         public Image GetThumbnail(string name)
         {
-            string path = thumbnailsDir + name;
+            string path = thumbnailsDir + "\\" + name; // Path.Combine is too slow for this method
             if (File.Exists(path))
             {
                 var bytes =  File.ReadAllBytes(path);
@@ -64,11 +64,7 @@ namespace Doto_Unlocker.Model
 
         public void StoreThumbnail(string name, Image data)
         {
-            string path = thumbnailsDir + name;
-            using (var file = new FileStream(path, FileMode.Create))
-            {
-                data.Save(file, System.Drawing.Imaging.ImageFormat.Png);
-            }
+            data.Save(thumbnailsDir + "\\" + name, System.Drawing.Imaging.ImageFormat.Png);
         }
 
     }

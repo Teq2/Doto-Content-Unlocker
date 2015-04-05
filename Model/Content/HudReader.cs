@@ -40,9 +40,9 @@ namespace Doto_Unlocker.Model
     abstract class HudReaderBase: IHudReader
     {
         protected VpkArchive arc;
-        protected List<VpkEntry> defaultFiles;
+        protected List<VpkFile> defaultFiles;
 
-        protected HudReaderBase(VpkArchive arc, List<VpkEntry> defaultFiles)
+        protected HudReaderBase(VpkArchive arc, List<VpkFile> defaultFiles)
         {
             this.arc = arc;
             this.defaultFiles = defaultFiles;
@@ -57,7 +57,7 @@ namespace Doto_Unlocker.Model
         string basePath;
         string relPath;
 
-        public DefaultHudReader(VpkArchive arc, List<VpkEntry> defaultFiles, string basePath, string relPath): base(arc, defaultFiles)
+        public DefaultHudReader(VpkArchive arc, List<VpkFile> defaultFiles, string basePath, string relPath): base(arc, defaultFiles)
         {
             this.basePath = basePath;
             this.relPath = relPath;
@@ -93,10 +93,10 @@ namespace Doto_Unlocker.Model
 
     class ArchivedHudReader: HudReaderBase
     {
-        List<VpkEntry> hudFiles;
+        List<VpkFile> hudFiles;
         string styleName;
 
-        public ArchivedHudReader(VpkArchive arc, List<VpkEntry> defaultFiles, List<VpkEntry> hudFiles, string styleName): base(arc, defaultFiles)
+        public ArchivedHudReader(VpkArchive arc, List<VpkFile> defaultFiles, List<VpkFile> hudFiles, string styleName): base(arc, defaultFiles)
         {
             this.hudFiles = hudFiles;
             this.styleName = styleName;
@@ -146,7 +146,7 @@ namespace Doto_Unlocker.Model
             }
         }
 
-        private bool CheckPath(VpkEntry entry, string filename)
+        private bool CheckPath(VpkFile entry, string filename)
         {
             var path = entry.Path + '/' + entry.Name + '.' + entry.Ext;
             return path.EndsWith(filename, StringComparison.OrdinalIgnoreCase);

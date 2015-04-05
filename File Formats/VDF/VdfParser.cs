@@ -39,9 +39,25 @@ namespace Doto_Unlocker.VDF
         protected VDFParserException(SerializationInfo info, StreamingContext context) : base() { }
     }
 
+    /*  Vdf file example:
+     * 
+         "items_game"
+         {
+	        "game_info"
+	        {
+		        "first_valid_class"		"1"
+		        "last_valid_class"		"1000"
+	        }
+     
+            ...
+         }
+     * 
+     * It has 3 control characters '{', '}' and '"'. Control symbols can't be used in keys and values.
+     */
+
     static class VdfParser
     {
-        enum Token { none, Key, Val, GroupStart, GroupEnd }
+        enum Token { None, Key, Val, GroupStart, GroupEnd }
 
         /// <summary>
         /// Removed supporting unquoted tokens
@@ -52,15 +68,14 @@ namespace Doto_Unlocker.VDF
         {
             Stack<VdfNode> hierarchy = new Stack<VdfNode>();
             VdfNode rootNode = null; // volvo always uses only 1 root node
-            VdfNode parentNode = null;
-            VdfNode currentNode = null;
-            Token lastToken = Token.none;
+            VdfNode parentNode = null, currentNode = null;
+            Token lastToken = Token.None;
             int len = data.Length;
 
             for (int pos = 0; pos < len; )
             {
                 char el = data[pos];
-                pos++; // early increment (little optimization)
+                pos++; // increment beforehand
 
                 switch (el)
                 {
@@ -73,7 +88,7 @@ namespace Doto_Unlocker.VDF
                             if (parentNode != null)
                             {
                                 // is it first childnode?
-                                if (parentNode.ChildNodes == null) parentNode.ChildNodes = new NodeList();
+                                if (parentNode.ChildNodes == null) parentNode.ChildNodes = new List<VdfNode>();
                                 // add this node to the list
                                 parentNode.ChildNodes.Add(currentNode);
                             }
@@ -92,9 +107,9 @@ namespace Doto_Unlocker.VDF
                         else // add value to the node
                         {
                             int endOfVal;
-                            for (int offset = 0; ;offset = endOfVal-pos+1)
+                            for (int offset = pos; ; offset = endOfVal +1)
                             {
-                                endOfVal = data.IndexOf('"', pos + offset);
+                                endOfVal = data.IndexOf('"', offset);
                                 if (endOfVal == -1) throw new VDFParserException(); // unclosed token
                                 
                                 // skip \" sequence
@@ -116,11 +131,13 @@ namespace Doto_Unlocker.VDF
                     case '}':
                         if (parentNode != null)
                             parentNode = hierarchy.Pop(); // restore parent
+                        else 
+                            throw new VDFParserException(); // closing bracket without an open
                         lastToken = Token.GroupEnd;
                         break;
 
                     case '\n':
-                        lastToken = Token.none;
+                        lastToken = Token.None;
                         break;
                 }
             }

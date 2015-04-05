@@ -37,7 +37,7 @@ namespace Doto_Unlocker.VSIF
     {
         public VSIFFail FailType { get; set; }
         public uint Version { get; set; }
-        public int SuccessfullyParsed { get; set; }
+        public int SuccessfullyParsedHeaders { get; set; }
 
         public InvalidVsifFileStructureException() : base() { }
         public InvalidVsifFileStructureException(string message) : base() { }
@@ -51,12 +51,12 @@ namespace Doto_Unlocker.VSIF
         public uint Version;     // scenes.image file version. 2 is used.
         public uint ScenesCount; // Total number of scene files.
         public uint StringsCount;// Number of strings in the string pool (explained later).
-        public uint SceneOffset; // Offset to the scene entries (explained later).
+        public uint SceneOffset; // Offset to the scene entries.
     };
 
     struct VsifEntry
     {
-        public uint CRC32;  // CRC32 hash of scene file name, in scenes\???.vcd format. All file names are lower-case and have \ as path separator.
+        public uint CRC32;  // CRC32 hash of scene file name, in scenes\???.vcd format. All filenames are lower-case and has '\' as path separator.
         public byte[] Data; 
         public VsifSummary Summary;
     }
@@ -84,9 +84,11 @@ namespace Doto_Unlocker.VSIF
         public void Parse()
         {
             FastBinaryReader reader = new FastBinaryReader(ref rawData);
+            uint ver = 0xFFFFFFFF;
             try
             {
                 VsifHeader header = LoadHeader(reader);
+                ver = header.Version;
                 LoadStrings(reader, ref header);
                 LoadEntries(reader, ref header);
             }
@@ -94,7 +96,7 @@ namespace Doto_Unlocker.VSIF
             {
                 if (ex is IndexOutOfRangeException || ex is ArgumentOutOfRangeException || ex is ArgumentException)
                 {
-                    //throw new InvalidFileStructureException("Unexpected end of file", ex) { FailType = VPKFail.StructureFail };
+                    throw new InvalidVsifFileStructureException("Error parsing VSIF file", ex) { FailType = VSIFFail.StructureFail, Version = ver };
                 }
                 else
                     throw;
@@ -107,7 +109,7 @@ namespace Doto_Unlocker.VSIF
             header.Signature = reader.ReadUInt32();
             if (header.Signature != VsifMagic) throw new InvalidVsifFileStructureException() { FailType = VSIFFail.MagicFail };
             header.Version = reader.ReadUInt32();
-            if (header.Version != VsifVersion) throw new InvalidVsifFileStructureException() { FailType = VSIFFail.UnsupportedVer };
+            if (header.Version != VsifVersion) throw new InvalidVsifFileStructureException() { FailType = VSIFFail.UnsupportedVer, Version = header.Version };
             header.ScenesCount = reader.ReadUInt32();
             header.StringsCount = reader.ReadUInt32();
             header.SceneOffset = reader.ReadUInt32();
@@ -123,10 +125,6 @@ namespace Doto_Unlocker.VSIF
             for (int i = 0; i < header.StringsCount; i++)
             {
                 string str = reader.ReadSring();
-                if (i == 0x12e4)
-                {
-
-                }
                 StringsPool.Add(str);
             }
         }

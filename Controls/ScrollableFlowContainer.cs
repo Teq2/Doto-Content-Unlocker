@@ -36,7 +36,7 @@ namespace Doto_Unlocker.Controls
 {
     class ScrollableFlowContainer: MetroUserControl
     {
-        public MetroScrollBar verticalScrollbar = new MetroScrollBar2();
+        public MetroScrollBar verticalScrollbar = new MetroScrollBar();
         MyFlowLayoutPanel contentPanel = new MyFlowLayoutPanel();
 
         public int EffectiveWidth
@@ -127,7 +127,6 @@ namespace Doto_Unlocker.Controls
             {
                 contentPanel.Controls[i].Dispose();
             }
-            contentPanel.Controls.Clear();
         }
     }
 }

@@ -30,13 +30,13 @@
         {
             this.components = new System.ComponentModel.Container();
             this.btnOk = new MetroFramework.Controls.MetroButton();
-            this.metroButton2 = new MetroFramework.Controls.MetroButton();
-            this.txtPath = new MetroFramework.Controls.MetroTextBox();
+            this.btnCancel = new MetroFramework.Controls.MetroButton();
+            this.txtSteamPath = new MetroFramework.Controls.MetroTextBox();
             this.btnBrowse = new MetroFramework.Controls.MetroButton();
             this.metroLabel1 = new MetroFramework.Controls.MetroLabel();
             this.boxStyles = new MetroFramework.Controls.MetroComboBox();
             this.metroLabel2 = new MetroFramework.Controls.MetroLabel();
-            this.tileSet = new MetroFramework.Controls.MetroTile();
+            this.tileStyle = new MetroFramework.Controls.MetroTile();
             this.metroStyleManager1 = new MetroFramework.Components.MetroStyleManager(this.components);
             this.txtDotoPath = new MetroFramework.Controls.MetroTextBox();
             this.metroLabel3 = new MetroFramework.Controls.MetroLabel();
@@ -57,32 +57,31 @@
             this.btnOk.UseSelectable = true;
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
-            // metroButton2
+            // btnCancel
             // 
-            this.metroButton2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.metroButton2.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.metroButton2.Location = new System.Drawing.Point(368, 189);
-            this.metroButton2.Name = "metroButton2";
-            this.metroButton2.Size = new System.Drawing.Size(75, 23);
-            this.metroButton2.TabIndex = 0;
-            this.metroButton2.Text = "Cancel";
-            this.metroButton2.UseSelectable = true;
-            this.metroButton2.Click += new System.EventHandler(this.metroButton2_Click);
+            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
+            this.btnCancel.Location = new System.Drawing.Point(368, 189);
+            this.btnCancel.Name = "btnCancel";
+            this.btnCancel.Size = new System.Drawing.Size(75, 23);
+            this.btnCancel.TabIndex = 0;
+            this.btnCancel.Text = "Cancel";
+            this.btnCancel.UseSelectable = true;
+            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
             // 
-            // txtPath
+            // txtSteamPath
             // 
-            this.txtPath.FontSize = MetroFramework.MetroTextBoxSize.Medium;
-            this.txtPath.Lines = new string[0];
-            this.txtPath.Location = new System.Drawing.Point(3, 24);
-            this.txtPath.MaxLength = 255;
-            this.txtPath.Name = "txtPath";
-            this.txtPath.PasswordChar = '\0';
-            this.txtPath.ScrollBars = System.Windows.Forms.ScrollBars.None;
-            this.txtPath.SelectedText = "";
-            this.txtPath.Size = new System.Drawing.Size(358, 23);
-            this.txtPath.TabIndex = 1;
-            this.txtPath.UseSelectable = true;
-            this.txtPath.Validating += new System.ComponentModel.CancelEventHandler(this.txtPath_Validating);
+            this.txtSteamPath.FontSize = MetroFramework.MetroTextBoxSize.Medium;
+            this.txtSteamPath.Lines = new string[0];
+            this.txtSteamPath.Location = new System.Drawing.Point(3, 24);
+            this.txtSteamPath.MaxLength = 255;
+            this.txtSteamPath.Name = "txtSteamPath";
+            this.txtSteamPath.PasswordChar = '\0';
+            this.txtSteamPath.ScrollBars = System.Windows.Forms.ScrollBars.None;
+            this.txtSteamPath.SelectedText = "";
+            this.txtSteamPath.Size = new System.Drawing.Size(358, 23);
+            this.txtSteamPath.TabIndex = 1;
+            this.txtSteamPath.UseSelectable = true;
             // 
             // btnBrowse
             // 
@@ -122,16 +121,16 @@
             this.metroLabel2.TabIndex = 2;
             this.metroLabel2.Text = "Color theme:";
             // 
-            // tileSet
+            // tileStyle
             // 
-            this.tileSet.ActiveControl = null;
-            this.tileSet.Location = new System.Drawing.Point(223, 118);
-            this.tileSet.Name = "tileSet";
-            this.tileSet.Size = new System.Drawing.Size(138, 29);
-            this.tileSet.TabIndex = 5;
-            this.tileSet.Text = "Set new theme";
-            this.tileSet.UseSelectable = true;
-            this.tileSet.Click += new System.EventHandler(this.metroTile2_Click);
+            this.tileStyle.ActiveControl = null;
+            this.tileStyle.Location = new System.Drawing.Point(223, 118);
+            this.tileStyle.Name = "tileStyle";
+            this.tileStyle.Size = new System.Drawing.Size(138, 29);
+            this.tileStyle.TabIndex = 5;
+            this.tileStyle.Text = "Set new theme";
+            this.tileStyle.UseSelectable = true;
+            this.tileStyle.Click += new System.EventHandler(this.tileStyle_Click);
             // 
             // metroStyleManager1
             // 
@@ -152,7 +151,6 @@
             this.txtDotoPath.Size = new System.Drawing.Size(358, 23);
             this.txtDotoPath.TabIndex = 1;
             this.txtDotoPath.UseSelectable = true;
-            this.txtDotoPath.TextChanged += new System.EventHandler(this.txtDotoPath_TextChanged);
             // 
             // metroLabel3
             // 
@@ -166,14 +164,14 @@
             // metroPanel1
             // 
             this.metroPanel1.Controls.Add(this.boxStyles);
-            this.metroPanel1.Controls.Add(this.tileSet);
-            this.metroPanel1.Controls.Add(this.txtPath);
+            this.metroPanel1.Controls.Add(this.tileStyle);
+            this.metroPanel1.Controls.Add(this.txtSteamPath);
             this.metroPanel1.Controls.Add(this.metroLabel2);
             this.metroPanel1.Controls.Add(this.btnOk);
             this.metroPanel1.Controls.Add(this.metroLabel3);
             this.metroPanel1.Controls.Add(this.btnBrowse);
             this.metroPanel1.Controls.Add(this.metroLabel1);
-            this.metroPanel1.Controls.Add(this.metroButton2);
+            this.metroPanel1.Controls.Add(this.btnCancel);
             this.metroPanel1.Controls.Add(this.txtDotoPath);
             this.metroPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.metroPanel1.HorizontalScrollbarBarColor = true;
@@ -198,7 +196,7 @@
             this.AcceptButton = this.btnOk;
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.CancelButton = this.metroButton2;
+            this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(486, 295);
             this.Controls.Add(this.metroPanel1);
             this.MaximizeBox = false;
@@ -223,13 +221,13 @@
         #endregion
 
         private MetroFramework.Controls.MetroButton btnOk;
-        private MetroFramework.Controls.MetroButton metroButton2;
-        private MetroFramework.Controls.MetroTextBox txtPath;
+        private MetroFramework.Controls.MetroButton btnCancel;
+        private MetroFramework.Controls.MetroTextBox txtSteamPath;
         private MetroFramework.Controls.MetroButton btnBrowse;
         private MetroFramework.Controls.MetroLabel metroLabel1;
         private MetroFramework.Controls.MetroComboBox boxStyles;
         private MetroFramework.Controls.MetroLabel metroLabel2;
-        private MetroFramework.Controls.MetroTile tileSet;
+        private MetroFramework.Controls.MetroTile tileStyle;
         public MetroFramework.Components.MetroStyleManager metroStyleManager1;
         private MetroFramework.Controls.MetroLabel metroLabel3;
         private MetroFramework.Controls.MetroTextBox txtDotoPath;

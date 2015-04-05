@@ -43,27 +43,26 @@ namespace Doto_Unlocker.Controls
     {
         #region native
         [DllImport("gdi32.dll", CharSet = CharSet.Auto, ExactSpelling = true, SetLastError = true)]
-        public static extern int BitBlt(HandleRef hDC, int x, int y, int nWidth, int nHeight, HandleRef hSrcDC, int xSrc, int ySrc, int dwRop);
+        private static extern int BitBlt(HandleRef hDC, int x, int y, int nWidth, int nHeight, HandleRef hSrcDC, int xSrc, int ySrc, int dwRop);
+
+        private const int SRCCOPY = 0x00CC0020; /* dest = source */
         #endregion
 
         private bool isHovered = false;
-        private const int titlePadding = 2;
-        private const int underLinePadding = 1;
+        private const int titleVerticalIndent = 2;
+        private const int underlineVerticalIndent = 1;
         private MetroColorStyle lastStyle;
 
         public ContentTile()
         {
             TabStop = false;
-            SetStyle(ControlStyles.AllPaintingInWmPaint, true);
-            SetStyle(ControlStyles.Opaque, true); // to prevent background erasing on Invalidate();
-            this.UseCustomBackColor = true;
+            SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.Opaque, true); // ControlStyles.Opaque prevents background from erasing on Invalidate();
             backbufferContext = BufferedGraphicsManager.Current;
-           // RecreateBuffers(); // disabled, coz 1st resize always occurs before 1st paint
         }
 
         #region Properties
         private Image tileImageOriginal = null;
-        private Image tileImageResized = null;
+        private Image tileImage = null;
         [DefaultValue(null)]
         [Category(CotrolDefaults.PropertyCategory.Appearance)]
         public Image TileImage
@@ -76,22 +75,22 @@ namespace Doto_Unlocker.Controls
             }
         }
 
-        private bool outline = true;
+        private bool drawBorder = true;
         [DefaultValue(true)]
         [Category(CotrolDefaults.PropertyCategory.Behaviour)]
-        public bool DynamicOutline
+        public bool DynamicBorder
         {
-            get { return outline; }
-            set { outline = value; }
+            get { return drawBorder; }
+            set { drawBorder = value; }
         }
 
-        private int outlineWidth = 1;
+        private int borderWidth = 1;
         [DefaultValue(1)]
         [Category(CotrolDefaults.PropertyCategory.Appearance)]
-        public int OutlineWidth
+        public int BorderWidth
         {
-            get { return outlineWidth; }
-            set { outlineWidth = value; }
+            get { return borderWidth; }
+            set { borderWidth = value; }
         }
 
         private int underLineWidth = 4;
@@ -159,12 +158,12 @@ namespace Doto_Unlocker.Controls
         {
             if (tileImageOriginal != null)
             {
-                if (tileImageOriginal.Width != this.Width && tileImageOriginal.Height != Height - titleHeight)
+                if (tileImageOriginal.Width != this.Width && tileImageOriginal.Height != this.Height - titleHeight)
                 {
-                    tileImageResized = new Bitmap(tileImageOriginal, new System.Drawing.Size(Width, Height - titleHeight));
+                    tileImage = new Bitmap(tileImageOriginal, new Size(this.Width, this.Height - titleHeight));
                 }
                 else
-                    tileImageResized = tileImageOriginal;
+                    tileImage = tileImageOriginal;
             }
         }
 
@@ -187,8 +186,12 @@ namespace Doto_Unlocker.Controls
 
         private void Redraw()
         {
-            drawingGraphics.Clear(this.BackColor);
+            Color styleColor = MetroPaint.GetStyleColor(Style);
+            Font titleFont = MetroFonts.Tile(tileTextFontSize, tileTextFontWeight);
+            
+            drawingGraphics.Clear(MetroPaint.BackColor.Form(Theme));
 
+            // Positioning
             Point imagePoint;
             Rectangle titleRectangle;
             switch (titleDock)
@@ -204,44 +207,39 @@ namespace Doto_Unlocker.Controls
                     break;
             }
 
-            if (tileImageResized != null)
-            {
-                drawingGraphics.DrawImage(tileImageResized, imagePoint.X, imagePoint.Y, tileImageResized.Width, tileImageResized.Height);
-            }
+            // DRAW IMAGE
+            if (tileImage != null)
+                drawingGraphics.DrawImage(tileImage, imagePoint.X, imagePoint.Y, tileImage.Width, tileImage.Height);
 
-            // DRAW TITLE-RECT
-            Font titleFont = MetroFonts.Tile(tileTextFontSize, tileTextFontWeight);
+            // UNDERLINE
             Size textSize = TextRenderer.MeasureText(titleText, titleFont);
-
-            // UNDER-LINE
-            Color lineShadow = MetroPaint.GetStyleColor(Style);
             Color lineColor = MetroPaint.BorderColor.TabControl.Normal(Theme);
-            Rectangle underLine = new Rectangle(outlineWidth, titleRectangle.Bottom - underLineWidth - outlineWidth - underLinePadding,
-                titleRectangle.Right - outlineWidth * 2, underLineWidth);
+            Rectangle underLine = new Rectangle(borderWidth, titleRectangle.Bottom - underLineWidth - borderWidth - underlineVerticalIndent, 
+                titleRectangle.Right - borderWidth * 2, underLineWidth);
 
             using (var baseColor = new SolidBrush(lineColor))
             {
                 drawingGraphics.FillRectangle(baseColor, underLine);
-                using (var highlighted = new SolidBrush(lineShadow))
+                // highlight
+                using (var highlighted = new SolidBrush(styleColor))
                 {
-                    drawingGraphics.FillRectangle(highlighted, underLine.Left + underLinePadding, underLine.Top, textSize.Width + 10, underLineWidth);
+                    drawingGraphics.FillRectangle(highlighted, underLine.Left + underlineVerticalIndent, underLine.Top, textSize.Width + 10, underLineWidth);
                 }
             }
 
             // TEXT
             TextFormatFlags flags = TextFormatFlags.Left | TextFormatFlags.LeftAndRightPadding | TextFormatFlags.EndEllipsis;
             Color textColor = MetroPaint.ForeColor.TabControl.Normal(Theme);
-            Point textPoint = new Point(underLine.Left, underLine.Top - textSize.Height - titlePadding);
-            Rectangle textRect = new Rectangle(textPoint, new Size(underLine.Width, underLine.Top - textPoint.Y));
-            TextRenderer.DrawText(drawingGraphics, titleText, titleFont, textRect, textColor, flags);
+            Point textPoint = new Point(underLine.Left, underLine.Top - textSize.Height - titleVerticalIndent);
+            Rectangle textBounds = new Rectangle(textPoint, new Size(underLine.Width - textPoint.X, underLine.Top - textPoint.Y));
+            TextRenderer.DrawText(drawingGraphics, titleText, titleFont, textBounds, textColor, flags);
 
             // BORDER
-            if (DesignMode || (outline && isHovered))
+            if (DesignMode || (drawBorder && isHovered))
             {
-                //Color borderColor = MetroPaint.BorderColor.Button.Hover(Theme);
-                using (Pen p = new Pen(lineShadow))
+                using (Pen p = new Pen(styleColor))
                 {
-                    drawingGraphics.DrawRectangle(p, new Rectangle(0, 0, Width - outlineWidth, Height - outlineWidth));
+                    drawingGraphics.DrawRectangle(p, new Rectangle(0, 0, Width - borderWidth, Height - borderWidth));
                 }
             }
         }
@@ -266,7 +264,7 @@ namespace Doto_Unlocker.Controls
 		    try
 		    {
                 BitBlt(new HandleRef(e.Graphics, hdc), e.ClipRectangle.X, e.ClipRectangle.Y, e.ClipRectangle.Width, e.ClipRectangle.Height,
-                    new HandleRef(drawingGraphics, hdc_buffer), e.ClipRectangle.X, e.ClipRectangle.Y, 0xCC0020);
+                    new HandleRef(drawingGraphics, hdc_buffer), e.ClipRectangle.X, e.ClipRectangle.Y, SRCCOPY);
 		    }
 		    finally
 		    {
@@ -275,12 +273,17 @@ namespace Doto_Unlocker.Controls
 		    }
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            RecreateBuffers();
+            base.OnLoad(e);
+        }
 
         protected override void OnResize(EventArgs e)
         {
             needRedraw = true;
             ResizeImage();
-            RecreateBuffers();
+            if (backbufferGraphics != null) RecreateBuffers();
             base.OnResize(e);
         }
 

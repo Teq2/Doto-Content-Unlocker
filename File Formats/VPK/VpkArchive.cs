@@ -29,143 +29,107 @@ using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-[Serializable]
-class VpkFileOutdatedException : Exception, ISerializable
-{
-    public VpkFileOutdatedException() : base() { }
-    public VpkFileOutdatedException(string message) : base() { }
-    public VpkFileOutdatedException(string message, Exception inner) : base() { }
-    protected VpkFileOutdatedException(SerializationInfo info, StreamingContext context) : base() { }
-
-    public string VpkFileName { get; set; }
-    public DateTime LastUpdated { get; set; }
-    public DateTime DirLoaded { get; set; }
-}
-
-[Serializable]
-class VpkFileIOException : Exception, ISerializable
-{
-    public VpkFileIOException() : base() { }
-    public VpkFileIOException(string message) : base() { }
-    public VpkFileIOException(string message, Exception inner) : base() { }
-    protected VpkFileIOException(SerializationInfo info, StreamingContext context) : base() { }
-
-    public string VpkFileName { get; set; }
-    public DateTime LastUpdated { get; set; }
-    public DateTime DirLoaded { get; set; }
-}
-
-// ADD CRC32 CHECK?
-
 namespace Doto_Unlocker.VPK
 {
     class VpkArchive
     {
-        private string m_path;
-        private string m_archive;
-        private DateTime dir_loaded;
-        private VpkFile dir;
+        private string dirPath;
+        private string archiveName;
+        private DateTime dirLoadedDate;
+        private VpkDir dir;
 
         public VpkArchive(string dirPath, string archiveName)
         {
             if (string.IsNullOrEmpty(dirPath)) throw new ArgumentNullException("Path");
             if (string.IsNullOrEmpty(archiveName)) throw new ArgumentNullException("Archive");
 
-            m_path = dirPath;
-            m_archive = archiveName;
+            this.dirPath = dirPath;
+            this.archiveName = archiveName;
 
-            dir = new VpkFile(m_path + "\\" + m_archive + "_dir.vpk");
-            dir_loaded = DateTime.Now;
+            dir = new VpkDir(string.Format("{0}/{1}_dir.vpk", dirPath, archiveName));
+            dirLoadedDate = DateTime.Now;
+        }
+
+        public IEnumerator<VpkFile> GetEnumerator()
+        {
+            return dir.Data.GetEnumerator();
         }
 
         /// <exception cref="VpkFileIOException">Vpk file access error</exception>
         /// <exception cref="VpkFileOutdatedException">If pack-file updated after dir parsed</exception>
-        public byte[] ReadFile(VpkEntry fileEntry)
+        public byte[] ReadFile(VpkFile fileEntry)
         {
             VPKDirectoryEntryInfo fileStruc = fileEntry.Info;
-            // is file preloaded?
-            if (fileStruc.PreloadBytes > 0) return fileStruc.PreloadedData;
 
-            var fname = String.Format(@"{0}\{1}_{2:D3}.vpk", m_path, m_archive, fileStruc.ArchiveIndex);
-            CheckVersion(fname);
+            // was file fully preloaded?
+            if (fileStruc.PreloadBytes > 0 && fileStruc.EntryLength == 0) 
+                return fileStruc.PreloadedData;
 
-            // load
-            FileStream file = null;
-            try
-            {
-                file = new FileStream(fname, FileMode.Open, FileAccess.Read);
-                file.Position = fileStruc.EntryOffset;
-                byte[] data = new byte[fileStruc.EntryLength];
-                file.Read(data, 0, (int)fileStruc.EntryLength);
-                return data;
-            }
-            catch (IOException e)
-            {
-                throw new VpkFileIOException("Err accessing vpk file", e) { VpkFileName = fname };
-            }
-            catch (System.Security.SecurityException e)
-            {
-                throw new VpkFileIOException("Err accessing vpk file", e) { VpkFileName = fname };
-            }
-            finally
-            {
-                if (file != null) file.Close();
-            }
-        }
+            DateTime fileTime = default(DateTime);
+            var vpkFileName = String.Format("{0}/{1}_{2:D3}.vpk", dirPath, archiveName, fileStruc.ArchiveIndex);
+            try {
+                fileTime = CheckFileWasUpdated(vpkFileName);
 
-        /// <exception cref="VpkFileIOException">Vpk file access error</exception>
-        /// <exception cref="VpkFileOutdatedException">If pack-file updated after dir parsed</exception>
-        public void EditFile(VpkEntry fileEntry, ref byte[] data, bool restoreTimestamp)
-        {
-            VPKDirectoryEntryInfo fileStruc = fileEntry.Info;
-            // preloaded files aren't supporting
-            if (fileStruc.PreloadBytes > 0) return;
-
-            var fname = String.Format(@"{0}\{1}_{2:D3}.vpk", m_path, m_archive, fileStruc.ArchiveIndex);
-            CheckVersion(fname);
-
-            // overwrite
-            FileStream file = null;
-            var fileTime = File.GetLastWriteTime(fname);
-            try
-            {
-                file = new FileStream(fname, FileMode.Open, FileAccess.Write);
-                file.Position = fileStruc.EntryOffset;
-                file.Write(data, 0, data.Length);
-            }
-            catch (IOException e)
-            {
-                throw new VpkFileIOException("Err accessing vpk file", e) { VpkFileName = fname };
-            }
-            catch (System.Security.SecurityException e)
-            {
-                throw new VpkFileIOException("Err accessing vpk file", e) { VpkFileName = fname };
-            }
-            finally
-            {
-                if (file != null)
+                using (var file = new FileStream(vpkFileName, FileMode.Open, FileAccess.Read))
                 {
-                    file.Close();
-                    if (restoreTimestamp) File.SetLastWriteTime(fname, fileTime);
+                    byte[] fileData = new byte[fileStruc.PreloadBytes + fileStruc.EntryLength];
+                    // ok, file opened, fill preloaded bytes in
+                    if (fileStruc.PreloadBytes > 0)
+                        Buffer.BlockCopy(fileStruc.PreloadedData, 0, fileData, 0, fileStruc.PreloadBytes);
+
+                    file.Position = fileStruc.EntryOffset;
+                    file.Read(fileData, fileStruc.PreloadBytes, (int)fileStruc.EntryLength);
+                    return fileData;
                 }
             }
+            catch (Exception e)
+            {
+                if (e is IOException || e is UnauthorizedAccessException)
+                    throw new VpkFileIOException("Err accessing vpk file", e)
+                    {
+                        VpkFileName = vpkFileName,
+                        DirLoaded = dirLoadedDate,
+                        LastUpdated = fileTime
+                    };
+                else
+                    throw;
+            }
         }
 
         /// <exception cref="VpkFileIOException">Vpk file access error</exception>
-        /// <exception cref="VpkFileOutdatedException">If pack-file updated after dir parsed</exception>
+        /// <exception cref="VpkFileOutdatedException">If pack-file updated after being parsed</exception>
+        public void OverwriteFile(VpkFile fileEntry, byte[] data, bool restoreTimestamp=false)
+        {
+            VPKDirectoryEntryInfo fileStruc = fileEntry.Info;
+
+            string vpkDataFileName;
+            if (fileStruc.PreloadBytes > 0)
+            {
+                // part of a file located in dir-file
+                vpkDataFileName = String.Format("{0}/{1}_dir.vpk", dirPath, archiveName);
+                WriteDataPortionToFile(vpkDataFileName, data, 0, fileStruc.PreloadedDataOffset, fileStruc.PreloadBytes, restoreTimestamp);
+                // for further reading
+                Buffer.BlockCopy(data, 0, fileStruc.PreloadedData, 0, fileStruc.PreloadBytes);
+            }
+
+            if (fileStruc.EntryLength != 0)
+            {
+                vpkDataFileName = String.Format(@"{0}/{1}_{2:D3}.vpk", dirPath, archiveName, fileStruc.ArchiveIndex);
+                WriteDataPortionToFile(vpkDataFileName, data, fileStruc.PreloadBytes, fileStruc.EntryOffset, fileStruc.EntryLength, restoreTimestamp);
+            }
+        }
+
+        /// <exception cref="VpkFileIOException">Vpk file access error</exception>
+        /// <exception cref="VpkFileOutdatedException">If pack-file updated after being parsed</exception>
         public byte[] ReadFile(string fullPath)
         {
             var entry = FindFile(fullPath);
-
-            if (entry != null)
-                return ReadFile(entry);
-            else
-                return null;
+            return entry != null ? ReadFile(entry) : null;
         }
 
         /// <summary>root folder is 0x20</summary>
-        /// <param name="fullPath">full relative path with filename, without starting slash</param>
-        public VpkEntry FindFile(string fullPath)
+        /// <param name="fullPath">full relative path with filename</param>
+        public VpkFile FindFile(string fullPath)
         {
             var match = Regex.Match(fullPath, @"^[\\/]*(.+)[/\\]+(.+)\.(.+)$");
             if (match.Success)
@@ -178,21 +142,47 @@ namespace Doto_Unlocker.VPK
             return null;
         }
 
-        public VpkEntry[] FindFiles(string partialPath)
+        public VpkFile[] FindFiles(string partialPath)
         {
             return dir.Data.Where(e => e.Path.StartsWith(partialPath)).ToArray();
         }
 
-        public VpkEntry[] FindFiles(string partialPath, string ext)
+        public VpkFile[] FindFiles(string partialPath, string ext)
         {
             return dir.Data.Where(e => e.Path.StartsWith(partialPath) && e.Ext == ext).ToArray();
         }
 
-        private void CheckVersion(string fname)
+        private void WriteDataPortionToFile(string fileName, byte[] data, int srcOffset, int dstOffset, int dataLength, bool restoreTimestamp = false)
         {
-            DateTime vpkTime = File.GetLastWriteTime(fname);
-            if (DateTime.Compare(dir_loaded, vpkTime) <= 0)
-                throw new VpkFileOutdatedException() { VpkFileName = fname, LastUpdated = vpkTime, DirLoaded = dir_loaded };
+            DateTime fileTime = default(DateTime);
+            try
+            {
+                fileTime = CheckFileWasUpdated(fileName);
+                using (var file = new FileStream(fileName, FileMode.Open, FileAccess.Write))
+                {
+                    file.Position = dstOffset;
+                    file.Write(data, srcOffset, dataLength);
+                }
+                if (restoreTimestamp) File.SetLastWriteTime(fileName, fileTime);
+            }
+            catch (Exception e)
+            {
+                if (e is IOException || e is UnauthorizedAccessException)
+                    throw new VpkFileIOException("Err accessing vpk file", e) 
+                    { 
+                        VpkFileName = fileName, DirLoaded = dirLoadedDate, LastUpdated = fileTime
+                    };
+                else
+                    throw;
+            }
+        }
+
+        private DateTime CheckFileWasUpdated(string fileName)
+        {
+            DateTime lastWrite = File.GetLastWriteTime(fileName);
+            if (DateTime.Compare(dirLoadedDate, lastWrite) <= 0)
+                throw new VpkFileOutdatedException() { VpkFileName = fileName, LastUpdated = lastWrite, DirLoaded = dirLoadedDate };
+            return lastWrite;
         }
     }
 }

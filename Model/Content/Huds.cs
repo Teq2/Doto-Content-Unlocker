@@ -34,33 +34,21 @@ using Doto_Unlocker.Properties;
 
 namespace Doto_Unlocker.Model
 {
-    class Huds : IContentProvider
+    class Huds : ContentProvider
     {
-        private class Hud
-        {
-            public string Name; // to upper layers
-            public string NameInternal;
-            public string Style;
-            public List<VpkEntry> Files; // all files for current style
-            public Image Thumbnail;
-        }
-
         const string hud_category = "huds";
         const string defaultHudName = "default";
         const string basePath = "resource/flash3/images/";
         const string hudsPath = basePath + "hud_skins/";
         const string iconsPath = basePath + "econ/huds";
-        readonly string dotaPath;
 
-        private VpkArchive arc;
-        VdfNode schema;
-        private VpkEntry[] hudsFiles;
-        private VpkEntry[] hudsIcons;
+        private VpkFile[] hudsFiles;
+        private VpkFile[] hudsIcons;
         private VdfNode dota_res;
         private List<Hud> huds;
         private Hud defaultHud;
 
-        public string ID 
+        public override string ID 
         {
             get
             {
@@ -68,11 +56,9 @@ namespace Doto_Unlocker.Model
             }
         }
 
-        private Huds(VpkArchive vpk, VdfNode schema, string dotaPath)
+        private Huds(VpkArchive vpk, VdfNode schema, string dotaDataPath)
+            : base(vpk, schema, dotaDataPath)
         {
-            arc = vpk;
-            this.schema = schema;
-            this.dotaPath = dotaPath + "/dota/";
         }
 
         public static IContentProvider CreateInstance(VPK.VpkArchive vpk, VDF.VdfNode contentSchema, string contentFilesPath)
@@ -80,12 +66,70 @@ namespace Doto_Unlocker.Model
             return new Huds(vpk, contentSchema, contentFilesPath);
         }
 
-        public IEnumerable<IGraphicContent> GetContentList()
+        public override IEnumerable<IGraphicContent> GetContentList()
         {
             if (huds == null || huds.Count == 0) Initialize();
 
             int id = 0;
             return from h in huds select new GraphicContent { ID = id++, Name = h.Name, Image = h.Thumbnail };
+        }
+
+        public Image GetContentImage(int ID)
+        {
+            //if (huds == null || huds.Count == 0) Initialize();
+
+            Hud hud = huds[ID];
+            HudConstructor hudCtor = new HudConstructor(new ArchivedHudReader(arc, defaultHud.Files, hud.Files, hud.Style));
+            return hudCtor.Construct();
+        }
+
+        public override IGraphicContent InstallContent(int ID)
+        {
+            Hud hud = huds[ID];
+            var hudFiles = hud.Files;
+
+            if (hud.Style != null)
+            {
+                var styledFiles = from file in hudFiles
+                                  where file.Path.EndsWith(hud.Style, StringComparison.OrdinalIgnoreCase)
+                                  select file;
+                hudFiles = styledFiles.Union(hudFiles, new VpkEntryNameComparer()).ToList();
+            }
+
+            string hudDir = string.Format("{0}/{1}{2}/", dotaDataPath, hudsPath, defaultHudName);
+            // remove all files without deleting dirs
+            if (Directory.Exists(hudDir)) Utils.ClearDir(hudDir);
+
+            foreach (var file in hudFiles)
+            {
+                var last = file.Path.LastIndexOf('/');
+                string subDir = file.Path.Substring(last + 1);
+
+                if (subDir.StartsWith("style", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (subDir.Equals(hud.Style, StringComparison.OrdinalIgnoreCase)) // it's current style
+                    {
+                        // step one level higher
+                        var prev = file.Path.LastIndexOf('/', last - 1) + 1;
+                        subDir = file.Path.Substring(prev, last - prev);
+                    }
+                    else continue; // other style (current is default)
+                }
+                if (subDir.Equals(hud.NameInternal, StringComparison.OrdinalIgnoreCase)) continue; // skip root files 
+
+                // dir
+                string fileDir = hudDir + subDir;
+                if (!Directory.Exists(fileDir)) Directory.CreateDirectory(fileDir);
+                // file
+                string filePath = string.Format("{0}/{1}.{2}", fileDir, file.Name, file.Ext);
+                using (var fs = new FileStream(filePath, FileMode.Create))
+                {
+                    var newData = arc.ReadFile(file);
+                    fs.Write(newData, 0, newData.Length);
+                }
+            }
+
+            return new GraphicContent() { ID = ID, Name = hud.Name, Image = hud.Thumbnail };
         }
 
         private void Initialize()
@@ -106,23 +150,20 @@ namespace Doto_Unlocker.Model
             hudsIcons = arc.FindFiles(iconsPath, "png");
             dota_res = LoadStringResources()["Tokens"];
 
-            foreach (var hudInfo in hudsInfo) // 300 +
+            foreach (var hudInfo in hudsInfo)
             {
                 var visuals = hudInfo["visuals"];
-                var styles = visuals["styles"];
-                if (styles == null)
-                {
+                var styles = visuals["styles"]; // custom hud styles
+                if (styles == null) {
                     var hud = HudCreate(hudInfo, visuals, null);
                     huds.Add(hud);
                 }
                 else
-                {
                     foreach (var style in styles.ChildNodes)
                     {
                         var hud = HudCreate(hudInfo, visuals, style);
                         huds.Add(hud);
                     }
-                }
             }
 
             defaultHud = LoadDefaultHud();
@@ -159,91 +200,39 @@ namespace Doto_Unlocker.Model
             hud.Files = hudFilesSet.ToList();
 
             // apply style
-            if (style != null)
-            {
+            if (style != null) {
                 // change name
                 var token = style["name"].Val.Substring(1); // skip '#' symbol
                 hud.Name += ": " + dota_res[token]; // string from dota-resources
                 
                 if (style.Key != "0") // "0" is "default" style
-                {
                     hud.Style = "style" + style.Key;
-                }
             }
             return hud;
         }
 
-        public Image GetContentImage(int ID)
-        {
-            //if (huds == null || huds.Count == 0) Initialize();
-
-            Hud hud = huds[ID];
-            HudConstructor hudCtor = new HudConstructor(new ArchivedHudReader(arc, defaultHud.Files, hud.Files, hud.Style));
-            return hudCtor.Construct();
-        }
-
-        public Image GetInstalledContentImage()
+        public override Image GetInstalledContentImage()
         {
             if (huds == null || huds.Count == 0) Initialize();
 
             string hudRelPath = hudsPath + defaultHudName + "/";
-            HudConstructor hud = new HudConstructor(new DefaultHudReader(arc, defaultHud.Files, dotaPath, hudRelPath));
+            HudConstructor hud = new HudConstructor(new DefaultHudReader(arc, defaultHud.Files, dotaDataPath + '/', hudRelPath));
             return hud.Construct();
         }
 
-        public IGraphicContent InstallContent(int ID)
+        private VDF.VdfNode LoadStringResources()
         {
-            Hud hud = huds[ID];
-            var hudFiles = hud.Files;
-
-            if (hud.Style != null)
-            {
-                var styledFiles = from file in hudFiles
-                                  where file.Path.EndsWith(hud.Style, StringComparison.OrdinalIgnoreCase)
-                                  select file;
-                hudFiles = styledFiles.Union(hudFiles, new VpkEntryNameComparer()).ToList();
-            }
-
-            string hudDir = dotaPath + hudsPath + defaultHudName + "/";
-            // remove all files from folder, without deleting folders
-            if (Directory.Exists(hudDir)) Utils.ClearDir(hudDir);
-
-            foreach (var file in hudFiles)
-            {
-                var last = file.Path.LastIndexOf('/');
-                string subDir = file.Path.Substring(last + 1);
-                
-                if (subDir.StartsWith("style", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (subDir.Equals(hud.Style, StringComparison.OrdinalIgnoreCase)) // it's current style
-                    {
-                        // step one level higher
-                        var prev = file.Path.LastIndexOf('/', last - 1) + 1;
-                        subDir = file.Path.Substring(prev, last - prev);
-                    }
-                    else continue; // other style (current is default)
-                }
-                if (subDir.Equals(hud.NameInternal, StringComparison.OrdinalIgnoreCase)) continue; // skip root files 
-
-                // dir
-                string fileDir = hudDir + subDir;
-                if (!Directory.Exists(fileDir)) Directory.CreateDirectory(fileDir);
-                // file
-                string filePath = fileDir + '/' + file.Name + '.' +  file.Ext;
-                using (var fs = new FileStream(filePath, FileMode.Create))
-                {
-                    var newData = arc.ReadFile(file);
-                    fs.Write(newData, 0, newData.Length);
-                }
-            }
-
-            return new GraphicContent() { ID = ID, Name = hud.Name, Image = hud.Thumbnail };
+            var text = File.ReadAllText(dotaDataPath + "/resource/dota_english.txt");
+            return VDF.VdfParser.Parse(text);
         }
 
-        VDF.VdfNode LoadStringResources()
+        private class Hud
         {
-            var text = File.ReadAllText(dotaPath + "resource\\dota_english.txt");
-            return VDF.VdfParser.Parse(text);
+            public string Name; // to upper layers
+            public string NameInternal;
+            public string Style;
+            public List<VpkFile> Files; // all files for current style
+            public Image Thumbnail;
         }
     }
 }

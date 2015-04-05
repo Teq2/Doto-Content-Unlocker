@@ -59,12 +59,12 @@ namespace Doto_Unlocker
             scaleContentPanel();
 
             #region style
-            if (Settings.Instance.Style == MetroColorStyle.Default)
+            if (Settings.Style == MetroColorStyle.Default)
             {
-                Settings.Instance.Style = defaultStyle;
+                Settings.Style = defaultStyle;
             }
-            StyleManager.Style = Settings.Instance.Style;
-            Settings.Instance.StyleChanged += (s) => StyleManager.Style = s.NewStyle;
+            StyleManager.Style = Settings.Style;
+            Settings.StyleChanged += (s) => StyleManager.Style = s.NewStyle;
             #endregion
         }
 
@@ -81,12 +81,12 @@ namespace Doto_Unlocker
         public void InvalidateContent(bool forceReload = false)
         {
             // clear containers
-            foreach (var container in containers) container.Clear();
+            foreach (var container in this.containers) container.Clear();
             CurrentContentCallback(0, null);
 
             if (forceReload)
             {
-                contentRequestAsync(containers.ActiveIndex);
+                contentRequestAsync(this.containers.ActiveIndex);
             }
             else
             {
@@ -94,7 +94,7 @@ namespace Doto_Unlocker
                 var reloadBtn = new ButtonOverlay();
                 {
                     EventHandler<ContainerSwitchEventArgs> handler = null;
-                    var containerId = containers.ActiveIndex;
+                    var containerId = this.containers.ActiveIndex;
                     reloadBtn.StyleManager.Theme = this.StyleManager.Theme;
                     reloadBtn.StyleManager.Style = this.StyleManager.Style;
                     reloadBtn.ButtonText = "Reload Content";
@@ -112,7 +112,7 @@ namespace Doto_Unlocker
                         };
                     containers.SwitchHandler += handler;
                     // install into cur. container
-                    containers.Current.Controls.Add(reloadBtn);
+                    this.containers.Current.Controls.Add(reloadBtn);
                     reloadBtn.BringToFront();
                 }
             }
@@ -120,7 +120,7 @@ namespace Doto_Unlocker
 
         private async void contentRequestAsync(int idx)
         {
-            bool needSplash = containers[idx].Count == 0;
+            bool needSplash = this.containers[idx].Count == 0;
 
             if (needSplash) SplashShow();
             await controller.ContentRequest(idx);
@@ -129,7 +129,7 @@ namespace Doto_Unlocker
 
         public void LoadContentCallback(int contentId, IEnumerable<Model.IGraphicContent> content)
         {
-            var container = containers[contentId];
+            var container = this.containers[contentId];
             if (container.Count == 0 && content != null) // container is empty, content isn't
             {
                 int imgWidth = 0, imgHeight = 0;
@@ -188,11 +188,8 @@ namespace Doto_Unlocker
             this.tabControl.SelectedIndex = -1;
             this.tabControl.TabPages.Clear();
 
-            var types = controller.ContentTypes();
-            foreach (var type in types)
-            {
+            foreach (var type in controller.ContentTypes())
                 registerContentType(type);
-            }
         }
 
         /// <summary>
@@ -214,14 +211,17 @@ namespace Doto_Unlocker
             container.Dock = System.Windows.Forms.DockStyle.Fill;
             container.Padding = new System.Windows.Forms.Padding(0, 3, 0, 0);
 
-            containers.Add(container);
+            this.containers.Add(container);
             page.Controls.Add(container);
             this.tabControl.TabPages.Add(page);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            if (!(SteamPaths.CheckSteamPath(Settings.Instance.SteamPath) && SteamPaths.CheckDota2Path(Settings.Instance.Dota2Path)))
+            var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            lblVer.Text = string.Format("v{0}.{1:D2}", ver.Major, ver.Minor);
+            
+            if (!(SteamPaths.CheckSteamPath(Settings.SteamPath) && SteamPaths.CheckDota2Path(Settings.Dota2Path)))
             {
                 // force set paths
                 ShowInfo("Current Steam Client and Dota 2 paths are invalid and can't be detected automatically.\r\n" +
@@ -229,9 +229,7 @@ namespace Doto_Unlocker
                 openSettingsWindow(true);
             }
             else
-            {
-                contentRequestAsync(containers.ActiveIndex);
-            }
+                contentRequestAsync(this.containers.ActiveIndex);
         }
 
         private void metroTabControl1_SelectedIndexChanged(object sender, EventArgs e)
@@ -239,7 +237,7 @@ namespace Doto_Unlocker
             var idx = tabControl.SelectedIndex;
             if (idx >= 0)
             {
-                containers.Switch(idx);
+                this.containers.Switch(idx);
                 contentRequestAsync(idx);
             }
         }
@@ -276,7 +274,7 @@ namespace Doto_Unlocker
             try
             {
                 // alternate way: steam://run/<appid>//?param1=value1;param2=value2;param3=value3
-                if (Process.Start(Settings.Instance.SteamPath + "/steam.exe", "-applaunch 570 -vpk_override") != null) Close();
+                if (Process.Start(Settings.SteamPath + "/steam.exe", "-applaunch 570 -enable_addons -dashboard dcu") != null) Close();
             }
             catch (Win32Exception ex)
             {

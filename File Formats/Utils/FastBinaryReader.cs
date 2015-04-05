@@ -51,10 +51,17 @@ namespace Doto_Unlocker
             return res;
         }
 
+        internal int ReadInt32()
+        {
+            var res = BitConverter.ToInt32(data, Pos);
+            Pos += sizeof(int);
+            return res;
+        }
+
         internal ushort ReadUInt16()
         {
             var res = BitConverter.ToUInt16(data, Pos);
-            Pos += sizeof (ushort);
+            Pos += sizeof(ushort);
             return res;
         }
 
@@ -80,7 +87,7 @@ namespace Doto_Unlocker
         /// Read null-terminated string
         /// </summary>
         /// <returns>String without null-termitator</returns>
-        internal string ReadSring()
+        internal string ReadString()
         {
             int pos_start = Pos;
             while (data[Pos++] != '\0') ;
@@ -89,9 +96,9 @@ namespace Doto_Unlocker
             return System.Text.Encoding.UTF8.GetString(data, pos_start, len);
         }
 
-        internal string ReadSring(int position)
+        internal string ReadString(int position)
         {
-            return null;
+            throw new NotImplementedException();
         }
     }
 }

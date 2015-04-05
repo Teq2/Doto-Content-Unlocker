@@ -33,11 +33,11 @@ namespace Doto_Unlocker.VDF
     {
         public String Key;
         public String Val;
-        public NodeList ChildNodes;
+        public IList<VdfNode> ChildNodes;
 
         public static implicit operator String(VdfNode node)
         {
-            return node.Val;
+            return node != null? node.Val: null;
         }
 
         public VdfNode this[int Idx]
@@ -55,21 +55,5 @@ namespace Doto_Unlocker.VDF
                 return ChildNodes.SingleOrDefault((cNode) => cNode.Key.Equals(Key));
             }
         }
-    }
-
-    class NodeList : List<VdfNode>
-    {
-        public NodeList(): base() {   }
-        
-        public NodeList(IEnumerable<VdfNode> src): base (src) {   }
-
-        //public VDFNode this[string Key]
-        //{
-        //    get
-        //    {
-        //        // query form: "from cNode in this from cNodeList in cNode[Key] select cNodeList"
-        //        return new NodeList(this.Where((cNode) => cNode.ChildNodes != null).SelectMany(cNode => cNode[Key]));
-        //    }
-        //}
     }
 }

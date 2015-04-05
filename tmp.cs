@@ -17,13 +17,13 @@ namespace Doto_Unlocker
             InitializeComponent();
             const string schemaPath = "scripts/items/items_game.txt";
 
-            var arc = new VPK.VpkArchive(Settings.Instance.Dota2Path + @"\dota", "pak01");
+            var arc = new VPK.VpkArchive(Settings.Dota2Path + @"\dota", "pak01");
             var raw = arc.ReadFile(schemaPath);
             var text = Encoding.ASCII.GetString(raw);
             var schema = VDF.VdfParser.Parse(text);
-            var providers = Model.Huds.CreateInstance(arc, schema, Settings.Instance.Dota2Path);
+            var huds = Model.Huds.CreateInstance(arc, schema, Settings.Dota2Path);
 
-            pictureBox1.Image = providers.GetInstalledContentImage();
+            pictureBox1.Image = huds.GetInstalledContentImage();
         }
     }
 }

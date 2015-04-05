@@ -31,7 +31,7 @@ using Doto_Unlocker.VPK;
 
 namespace Doto_Unlocker.Model
 {
-    class MegaKillsAnnouncers: AnnouncersBase
+    class MegaKillsAnnouncers: Announcers
     {
         const string ann_category = "announcers_killing_spree";
 
@@ -60,6 +60,6 @@ namespace Doto_Unlocker.Model
             return new MegaKillsAnnouncers(vpk, contentSchema, contentFilesPath);
         }
 
-        private MegaKillsAnnouncers(VpkArchive vpk, VdfNode schema, string dotaPath) : base(vpk, schema, dotaPath) { }
+        private MegaKillsAnnouncers(VpkArchive vpk, VdfNode schema, string contentFilesPath) : base(vpk, schema, contentFilesPath) { }
     }
 }

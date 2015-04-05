@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -26,9 +26,11 @@
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -37,9 +39,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -47,6 +50,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MetroFramework">
@@ -54,6 +58,9 @@
     </Reference>
     <Reference Include="MetroFramework.Design">
       <HintPath>packages\MetroFramework.Design.dll</HintPath>
+    </Reference>
+    <Reference Include="MetroFramework.Fonts">
+      <HintPath>packages\MetroFramework.Fonts.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -81,15 +88,13 @@
     <EmbeddedResource Include="tmp.resx">
       <DependentUpon>tmp.cs</DependentUpon>
     </EmbeddedResource>
-    <Compile Include="Controls\MetroScrollBar2.cs">
-      <SubType>Component</SubType>
-    </Compile>
     <Compile Include="Controls\ProgressOverlay.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Controls\ScrollableFlowContainer.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="File Formats\VPK\VpkFile.cs" />
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -97,16 +102,16 @@
       <DependentUpon>MainForm.cs</DependentUpon>
     </Compile>
     <Compile Include="DotoContent.cs" />
-    <Compile Include="Model\Content\AnnouncersBase.cs" />
     <Compile Include="Model\Content\Announcers.cs" />
+    <Compile Include="Model\Content\GameAnnouncers.cs" />
     <Compile Include="Model\Content\MegaKillsAnnouncers.cs" />
     <Compile Include="Model\Content\HudConstructor.cs" />
     <Compile Include="Model\Content\HudReader.cs" />
     <Compile Include="Model\Content\Huds.cs" />
-    <Compile Include="Model\Content\IContentProvider.cs" />
+    <Compile Include="Model\Content\BaseContentProvider.cs" />
     <Compile Include="Model\Content\IGraphicContent.cs" />
     <Compile Include="Model\Content\LoadingScreens.cs" />
-    <Compile Include="Model\Content\ScenesUnlocker.cs" />
+    <None Include="Model\Content\ScenesUnlocker%28no longer needs%29.cs" />
     <Compile Include="Model\Utils.cs" />
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -140,10 +145,9 @@
     <Compile Include="File Formats\VDF\VdfNode.cs" />
     <Compile Include="File Formats\VDF\VdfParser.cs" />
     <Compile Include="File Formats\Utils\FastBinaryReader.cs" />
-    <Compile Include="File Formats\VPK\IVpkEntry.cs" />
     <Compile Include="File Formats\VPK\VpkArchive.cs" />
-    <Compile Include="File Formats\VPK\VpkFile.cs" />
-    <Compile Include="File Formats\VSIF\VsifFile.cs" />
+    <Compile Include="File Formats\VPK\VpkDir.cs" />
+    <None Include="File Formats\VSIF\VsifFile%28unused%29.cs" />
     <Compile Include="File Formats\VTF\VtfLib.cs" />
     <Compile Include="File Formats\VTF\Vtf.cs" />
     <EmbeddedResource Include="MainForm.resx">
@@ -186,9 +190,6 @@
     <None Include="images\icons\undo-32.png" />
     <None Include="images\icons\waste-32.png" />
     <None Include="images\default.png" />
-    <Content Include="VTFLib.x86.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Resources\" />
@@ -209,6 +210,11 @@
       <ProductName>.NET Framework 3.5 SP1</ProductName>
       <Install>false</Install>
     </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="VTFLib.x86.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
