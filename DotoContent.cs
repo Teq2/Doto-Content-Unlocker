@@ -70,18 +70,17 @@ namespace Doto_Unlocker
             return availableProviders.Select(p => p.Name);
         }
 
-        public Task ContentRequest(int contentTypeIndex)
+        public async Task ContentRequest(int contentTypeIndex)
         {
             if (!Initialized()) Initialize();
             try {
                 if (Initialized())
-                    return LoadContentAsync(contentTypeIndex);
+                     await LoadContentAsync(contentTypeIndex);
             }
             catch (Exception e) {
                 var inner = e is AggregateException ? e.InnerException : e; // interested only in first exception, Wait() used only in LoadingScreens.LoadLoadingScreens()
                 CommonHandler(inner);
             }
-            return Task.FromResult<object>(null);
         }
 
         public async Task SetCurrent(int contentTypeIndex, int contentIndex)

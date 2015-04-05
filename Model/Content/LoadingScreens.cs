@@ -47,6 +47,7 @@ namespace Doto_Unlocker.Model
         const string ls_category = "loadingscreens";
         const string materialTypeExt = "vmt";
         const string installedScreenPath = "materials/console/dashboard_loading_dcu.vtf";
+        const string defaultScreenPath = "materials/console/dashboard_loading_embers.vtf";
         const string vguiFileText = "\"UnlitGeneric\" { " +
             "\"$basetexture\"	\"console\\dashboard_loading_dcu\"\r\n" +
             "\"$translucent\" \"1\"\r\n" +
@@ -192,7 +193,7 @@ namespace Doto_Unlocker.Model
                 vtfData = File.ReadAllBytes(filePath);
             }
             else
-                vtfData = arc.ReadFile(installedScreenPath);
+                vtfData = arc.ReadFile(defaultScreenPath);
 
             var img = VTF.Vtf.VtfToImage(vtfData);
             return img;
