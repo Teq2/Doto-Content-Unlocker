@@ -48,6 +48,7 @@ namespace Doto_Unlocker.Model
         const string materialTypeExt = "vmt";
         const string installedScreenPath = "materials/console/dashboard_loading_dcu.vtf";
         const string defaultScreenPath = "materials/console/dashboard_loading_embers.vtf";
+        const string alterMaterialPath = "materials/console/dashboard_loading_-game.vmt";
         const string vguiFileText = "\"UnlitGeneric\" { " +
             "\"$basetexture\"	\"console\\dashboard_loading_dcu\"\r\n" +
             "\"$translucent\" \"1\"\r\n" +
@@ -216,9 +217,13 @@ namespace Doto_Unlocker.Model
 
             // .vmt
             filePath = Path.ChangeExtension(filePath, materialTypeExt);
+            if (!File.Exists(filePath)) 
+                File.WriteAllText(filePath, vguiFileText);
+
+            // altarnative .vmt (workaround for dota commandline-parser's bug)
+            filePath = Path.Combine(dotaDataPath, alterMaterialPath);
             if (!File.Exists(filePath))
-                using (var fs = new StreamWriter(filePath, false))
-                    fs.Write(vguiFileText);
+                File.WriteAllText(filePath, vguiFileText);
 
             return new GraphicContent() { ID = ID, Name = screens[ID].Name, Image = screens[ID].Thumbnail };
         }
